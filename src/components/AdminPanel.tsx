@@ -39,12 +39,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Default admin secret (can be configured in Firebase or environment)
-    if (passcode.trim() === 'silenvault77' || passcode.trim() === 'admin123') {
+    const validPasscode = import.meta.env.VITE_ADMIN_PASSCODE;
+    if (validPasscode && passcode.trim() === validPasscode) {
       setIsAuthenticated(true);
       setAuthError(null);
     } else {
-      setAuthError('Incorrect Admin Passcode. Please try again.');
+      setAuthError('Incorrect Admin Passcode. Access denied.');
     }
   };
 
@@ -161,8 +161,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="w-12 h-12 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-400 mx-auto flex items-center justify-center font-bold text-xl mb-2">
                   🔒
                 </div>
-                <h3 className="font-bold text-sm text-white">Executive Passcode Required</h3>
-                <p className="text-xs text-slate-400">Default: <code className="bg-slate-800 text-amber-300 px-1 rounded">silenvault77</code></p>
+                <h3 className="font-bold text-sm text-white">Administrator Access Verification</h3>
+                <p className="text-xs text-slate-400">Enter your assigned executive key to manage operational data</p>
               </div>
 
               <div>

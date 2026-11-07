@@ -1,15 +1,17 @@
-# Dependencies
+# Dependencies & Build
 node_modules/
 dist/
 build/
 .vite/
+.firebase/
 
-# Environment files & credentials
-.env*
-!.env.example
+# Local Environment Variables & Secrets (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+*.local
 
-# Editor & OS files
+# System & Editor files
 .DS_Store
 Thumbs.db
 *.log
-

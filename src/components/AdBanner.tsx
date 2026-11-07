@@ -6,7 +6,7 @@ interface AdBannerProps {
 
 /**
  * Minimalist, Non-invasive Google AdSense responsive ad card.
- * Styled cleanly in dark charcoal to match J1C operations without blocking maps or lists.
+ * Styled cleanly in dark charcoal without blocking maps or lists.
  */
 export const AdBanner: React.FC<AdBannerProps> = ({ slotId = '1234567890' }) => {
   return (

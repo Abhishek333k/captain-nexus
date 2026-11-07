@@ -190,10 +190,10 @@ export function App() {
             <div className="flex items-center space-x-2">
               <span className="font-bold text-sm tracking-wide text-white">CAPTAIN NEXUS</span>
               <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-semibold">
-                J1C RADAR
+                NETWORK RADAR
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 leading-none">95 Official Rapido Servicing Cities • SilentVault Intelligence</p>
+            <p className="text-[10px] text-slate-400 leading-none">95 Active Servicing Hubs • SilentVault Geospatial Intelligence</p>
           </div>
         </div>
 
