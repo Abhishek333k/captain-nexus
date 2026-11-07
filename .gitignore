@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+dist/
+build/
+.vite/
+
+# Environment files & credentials
+.env*
+!.env.example
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+*.log
+
