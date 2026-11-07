@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import React, { useState, useMemo } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, RAPIDO_VERIFIED_OFFICES } from './data/offices';
 import { calculateHaversineDistance } from './utils/geo';
 import { MapView } from './components/MapView';
-import { AdminPanel } from './components/AdminPanel';
 import { AdBanner } from './components/AdBanner';
 
 const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
@@ -19,7 +16,7 @@ const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'cities' | 'offices'>('cities');
-  const [cities, setCities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
+  const [cities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices] = useState<CityOffice[]>(RAPIDO_VERIFIED_OFFICES);
   const [searchQuery, setSearchQuery] = useState('');
   const [radiusKm, setRadiusKm] = useState<number>(30); // 30km standard limit
@@ -27,31 +24,11 @@ export function App() {
   const [searchedLocation, setSearchedLocation] = useState<{ name: string; lat: number; lng: number } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [showSurgeHexagons, setShowSurgeHexagons] = useState(true);
 
-  // Sync cities with Firestore, fall back to official sitemap cities
-  useEffect(() => {
-    let isMounted = true;
-    async function loadCities() {
-      try {
-        const snap = await getDocs(collection(db, 'cities'));
-        if (isMounted && !snap.empty) {
-          const loaded = snap.docs.map((docSnap) => ({
-            id: docSnap.id,
-            ...(docSnap.data() as Omit<City, 'id'>)
-          }));
-          setCities(loaded);
-        }
-      } catch {
-        // Expected offline fallback
-      }
-    }
-    loadCities();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // Layer Visibility Controls (Prevent map visual clutter)
+  const [showCityPins, setShowCityPins] = useState(true);
+  const [showOfficePins, setShowOfficePins] = useState(false);
+  const [showSurgeHexagons, setShowSurgeHexagons] = useState(true);
 
   // Free OpenStreetMap Nominatim Geocoding for Indian Towns / Pincodes / Cities
   const handleSearchLocation = async (e: React.FormEvent) => {
@@ -61,7 +38,6 @@ export function App() {
     setIsSearching(true);
     setSearchError(null);
 
-    // Direct match check in 95 official cities
     const queryLower = searchQuery.trim().toLowerCase();
     const directCityMatch = cities.find(
       (c) => c.name.toLowerCase().includes(queryLower) || queryLower.includes(c.name.toLowerCase())
@@ -102,7 +78,7 @@ export function App() {
     }
   };
 
-  // Instant Haversine calculations & distance ranking for Cities
+  // Instant Haversine distance ranking for Cities
   const rankedCities = useMemo(() => {
     let list = cities.filter((c) => c.active);
 
@@ -127,7 +103,7 @@ export function App() {
       .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
   }, [cities, selectedService, searchedLocation]);
 
-  // Instant Haversine calculations & distance ranking for Legally Verified City Offices
+  // Instant Haversine distance ranking for Offices
   const rankedOffices = useMemo(() => {
     if (!searchedLocation) {
       return offices.map((o) => ({ ...o, distance: undefined }));
@@ -145,38 +121,6 @@ export function App() {
       })
       .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
   }, [offices, searchedLocation]);
-
-  // Admin add city handler
-  const handleAddCity = useCallback(async (newCity: City) => {
-    setCities((prev) => [newCity, ...prev]);
-    try {
-      await setDoc(doc(db, 'cities', newCity.id), newCity);
-    } catch (err) {
-      console.warn('Firestore write failed, updated local session state:', err);
-    }
-  }, []);
-
-  // Admin edit city handler
-  const handleEditCity = useCallback(async (updatedCity: City) => {
-    setCities((prev) => prev.map((c) => (c.id === updatedCity.id ? updatedCity : c)));
-    try {
-      await setDoc(doc(db, 'cities', updatedCity.id), updatedCity);
-    } catch (err) {
-      console.warn('Firestore edit failed, updated local session state:', err);
-    }
-  }, []);
-
-  // Admin toggle active handler
-  const handleToggleActive = useCallback(async (id: string, currentState: boolean) => {
-    setCities((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, active: !currentState } : c))
-    );
-    try {
-      await updateDoc(doc(db, 'cities', id), { active: !currentState });
-    } catch (err) {
-      console.warn('Firestore update failed, updated local session state:', err);
-    }
-  }, []);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 select-none overflow-hidden font-sans">
@@ -197,21 +141,28 @@ export function App() {
           </div>
         </div>
 
-        {/* Tab Switcher & Action Controls */}
+        {/* Tab & Layer Controls */}
         <div className="flex items-center space-x-2">
+          {/* Main List Mode */}
           <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
             <button
-              onClick={() => setActiveTab('cities')}
+              onClick={() => {
+                setActiveTab('cities');
+                setShowCityPins(true);
+              }}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'cities'
                   ? 'bg-amber-400 text-slate-950 shadow'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Official Cities ({rankedCities.length})
+              Active Cities ({rankedCities.length})
             </button>
             <button
-              onClick={() => setActiveTab('offices')}
+              onClick={() => {
+                setActiveTab('offices');
+                setShowOfficePins(true);
+              }}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'offices'
                   ? 'bg-blue-500 text-white shadow'
@@ -222,29 +173,41 @@ export function App() {
             </button>
           </div>
 
-          <button
-            onClick={() => setShowSurgeHexagons((prev) => !prev)}
-            className={`hidden sm:inline-block px-2.5 py-1 text-xs rounded-lg border transition-all ${
-              showSurgeHexagons
-                ? 'bg-amber-400/10 border-amber-400/40 text-amber-300'
-                : 'bg-slate-800 border-slate-700 text-slate-400'
-            }`}
-          >
-            {showSurgeHexagons ? 'Hexagons: ON' : 'Hexagons: OFF'}
-          </button>
-          <button
-            onClick={() => setIsAdminOpen(true)}
-            className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 hover:border-amber-400 text-slate-200 hover:text-amber-300 transition-colors flex items-center space-x-1"
-          >
-            <span>⚙️</span>
-            <span>Admin</span>
-          </button>
+          {/* Quick Map Layer Toggles */}
+          <div className="hidden lg:flex items-center space-x-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800 text-[11px]">
+            <button
+              onClick={() => setShowCityPins((prev) => !prev)}
+              className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                showCityPins ? 'bg-amber-400/20 text-amber-300' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              Cities: {showCityPins ? 'ON' : 'OFF'}
+            </button>
+            <span className="text-slate-700">|</span>
+            <button
+              onClick={() => setShowOfficePins((prev) => !prev)}
+              className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                showOfficePins ? 'bg-blue-500/20 text-blue-300' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              Offices: {showOfficePins ? 'ON' : 'OFF'}
+            </button>
+            <span className="text-slate-700">|</span>
+            <button
+              onClick={() => setShowSurgeHexagons((prev) => !prev)}
+              className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                showSurgeHexagons ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              Hex: {showSurgeHexagons ? 'ON' : 'OFF'}
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Workspace (Split Pane for Desktop, Vertical for Mobile) */}
+      {/* Main Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left / Control & Results Panel */}
+        {/* Left Panel */}
         <div className="w-full md:w-[440px] lg:w-[480px] bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0">
           {/* Controls Bar */}
           <div className="p-4 border-b border-slate-800 space-y-3 shrink-0">
@@ -351,7 +314,7 @@ export function App() {
             </div>
           )}
 
-          {/* Non-invasive Google AdSense Placement Card */}
+          {/* AdSense Placement (Auto-collapses if no ad served) */}
           <AdBanner />
 
           {/* Tab 1: Active Cities List */}
@@ -458,7 +421,7 @@ export function App() {
                           <span>📍 PIN: {office.pincode}</span>
                           <span>🕒 {office.timing}</span>
                         </div>
-                        <div className="text-[9px] text-amber-400/80 mt-1">
+                        <div className="text-[9px] text-blue-400/80 mt-1">
                           ✓ {office.verificationSource}
                         </div>
                       </div>
@@ -503,20 +466,12 @@ export function App() {
             searchedLocation={searchedLocation}
             radiusKm={radiusKm}
             showSurgeHexagons={showSurgeHexagons}
+            showCityPins={showCityPins}
+            showOfficePins={showOfficePins}
             activeTab={activeTab}
           />
         </div>
       </div>
-
-      {/* Admin Panel Modal with Passcode Gate & Edit Ability */}
-      <AdminPanel
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        cities={cities}
-        onAddCity={handleAddCity}
-        onEditCity={handleEditCity}
-        onToggleActive={handleToggleActive}
-      />
     </div>
   );
 }

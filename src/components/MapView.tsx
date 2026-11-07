@@ -21,6 +21,8 @@ interface MapProps {
   onSelectCity?: (city: City) => void;
   onSelectOffice?: (office: CityOffice) => void;
   showSurgeHexagons?: boolean;
+  showCityPins?: boolean;
+  showOfficePins?: boolean;
   activeTab?: 'cities' | 'offices';
 }
 
@@ -39,7 +41,6 @@ function generateHexagonVertices(lat: number, lng: number, radiusKm: number): [n
   return points;
 }
 
-// Custom Distinct Icons for Markers
 const createCustomIcon = (bgColor: string, symbol: string) => {
   return L.divIcon({
     className: 'custom-map-marker',
@@ -111,6 +112,8 @@ export const MapView: React.FC<MapProps> = ({
   onSelectCity,
   onSelectOffice,
   showSurgeHexagons = true,
+  showCityPins = true,
+  showOfficePins = true,
   activeTab = 'cities'
 }) => {
   const searchCenter = useMemo<[number, number] | null>(() => {
@@ -149,7 +152,7 @@ export const MapView: React.FC<MapProps> = ({
             <Marker position={searchCenter} icon={searchLocationIcon}>
               <Popup>
                 <div className="text-xs text-slate-800">
-                  <span className="font-bold block text-sm text-rose-700">🎯 Captain Target Point</span>
+                  <span className="font-bold block text-sm text-rose-700">🎯 Target Reference Point</span>
                   {searchedLocation?.name}
                 </div>
               </Popup>
@@ -169,8 +172,8 @@ export const MapView: React.FC<MapProps> = ({
           </>
         )}
 
-        {/* Official Servicing City Markers */}
-        {(activeTab === 'cities' || activeTab === undefined) &&
+        {/* 1. Official Servicing City Hubs (Toggled by showCityPins) */}
+        {showCityPins &&
           cities.map((city) => {
             const isInside = (city.distance ?? 999) <= radiusKm;
             const hexCoords = generateHexagonVertices(city.lat, city.lng, 8.5);
@@ -200,7 +203,7 @@ export const MapView: React.FC<MapProps> = ({
                     <div className="text-slate-900 text-xs p-1">
                       <div className="flex items-center space-x-1 mb-1">
                         <span className="bg-amber-400 text-slate-950 px-1 py-0.2 rounded font-bold text-[9px] uppercase">
-                          Official City Hub
+                          Operational Hub
                         </span>
                         <div className="font-bold text-sm text-amber-800">{city.name}</div>
                       </div>
@@ -231,43 +234,44 @@ export const MapView: React.FC<MapProps> = ({
             );
           })}
 
-        {/* Corporate & Registered Office Markers */}
-        {offices.map((office) => {
-          const isNearby = (office.distance ?? 999) <= radiusKm;
-          return (
-            <Marker
-              key={office.id}
-              position={[office.lat, office.lng]}
-              icon={getOfficeIcon(office.type)}
-              eventHandlers={{
-                click: () => onSelectOffice?.(office)
-              }}
-            >
-              <Popup>
-                <div className="text-slate-900 text-xs p-1 max-w-[240px]">
-                  <div className="flex items-center space-x-1.5 mb-1">
-                    <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">
-                      {office.type.replace('_', ' ')}
-                    </span>
-                    <span className="font-bold text-sm text-blue-950 truncate">{office.name}</span>
-                  </div>
-                  <div className="text-slate-700 text-[11px] mb-1 leading-snug">{office.address}</div>
-                  <div className="text-slate-500 text-[10px] font-medium mb-1">
-                    PIN: {office.pincode} • Timing: {office.timing}
-                  </div>
-                  <div className="text-[9px] text-blue-700 font-semibold mb-1">
-                    Source: {office.verificationSource}
-                  </div>
-                  {office.distance !== undefined && (
-                    <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1">
-                      Distance: <span className={isNearby ? 'text-emerald-700 font-bold' : 'text-blue-700'}>{office.distance} km</span>
+        {/* 2. Physical Corporate & Regional Offices (Toggled by showOfficePins) */}
+        {showOfficePins &&
+          offices.map((office) => {
+            const isNearby = (office.distance ?? 999) <= radiusKm;
+            return (
+              <Marker
+                key={office.id}
+                position={[office.lat, office.lng]}
+                icon={getOfficeIcon(office.type)}
+                eventHandlers={{
+                  click: () => onSelectOffice?.(office)
+                }}
+              >
+                <Popup>
+                  <div className="text-slate-900 text-xs p-1 max-w-[240px]">
+                    <div className="flex items-center space-x-1.5 mb-1">
+                      <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">
+                        {office.type.replace('_', ' ')}
+                      </span>
+                      <span className="font-bold text-sm text-blue-950 truncate">{office.name}</span>
                     </div>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+                    <div className="text-slate-700 text-[11px] mb-1 leading-snug">{office.address}</div>
+                    <div className="text-slate-500 text-[10px] font-medium mb-1">
+                      PIN: {office.pincode} • Timing: {office.timing}
+                    </div>
+                    <div className="text-[9px] text-blue-700 font-semibold mb-1">
+                      Source: {office.verificationSource}
+                    </div>
+                    {office.distance !== undefined && (
+                      <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1">
+                        Distance: <span className={isNearby ? 'text-emerald-700 font-bold' : 'text-blue-700'}>{office.distance} km</span>
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
 
         <MapViewController center={searchCenter} radiusKm={radiusKm} />
       </MapContainer>
