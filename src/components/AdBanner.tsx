@@ -32,3 +32,4 @@ export const AdBanner: React.FC<AdBannerProps> = ({ slotId = '1234567890' }) => 
     </div>
   );
 };
+
