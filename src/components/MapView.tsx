@@ -39,7 +39,44 @@ function generateHexagonVertices(lat: number, lng: number, radiusKm: number): [n
   return points;
 }
 
-// Safely fly/pan the map without calling getBounds on an unprojected circle
+// Custom Distinct Icons for Markers
+const createCustomIcon = (bgColor: string, symbol: string) => {
+  return L.divIcon({
+    className: 'custom-map-marker',
+    html: `
+      <div style="
+        background: ${bgColor};
+        color: #0b0d10;
+        width: 32px;
+        height: 32px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        border: 2px solid #ffffff;
+      ">
+        <span style="
+          transform: rotate(45deg);
+          font-weight: 900;
+          font-size: 14px;
+        ">${symbol}</span>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -30]
+  });
+};
+
+const cityIcon = createCustomIcon('#F9C80E', 'R', 'City Hub');
+const headOfficeIcon = createCustomIcon('#3B82F6', '🏢', 'Head Office');
+const registeredOfficeIcon = createCustomIcon('#8B5CF6', '🏛️', 'Registered Office');
+const corporateCampusIcon = createCustomIcon('#10B981', '🏬', 'Corporate Campus');
+const regionalSupportIcon = createCustomIcon('#06B6D4', '📍', 'Support Hub');
+const searchLocationIcon = createCustomIcon('#EF4444', '🎯', 'Target');
+
 function MapViewController({
   center,
   radiusKm
@@ -51,11 +88,8 @@ function MapViewController({
 
   useEffect(() => {
     if (!center) return;
-
-    // Calculate approximate bounding box in degrees without relying on unmounted layer projection
     const latDelta = (radiusKm * 1.2) / 110.574;
     const lngDelta = (radiusKm * 1.2) / (111.32 * Math.cos((center[0] * Math.PI) / 180));
-
     const southWest: [number, number] = [center[0] - latDelta, center[1] - lngDelta];
     const northEast: [number, number] = [center[0] + latDelta, center[1] + lngDelta];
 
@@ -79,19 +113,23 @@ export const MapView: React.FC<MapProps> = ({
   showSurgeHexagons = true,
   activeTab = 'cities'
 }) => {
-  useEffect(() => {
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
-    });
-  }, []);
-
   const searchCenter = useMemo<[number, number] | null>(() => {
     if (!searchedLocation) return null;
     return [searchedLocation.lat, searchedLocation.lng];
   }, [searchedLocation]);
+
+  const getOfficeIcon = (type: CityOffice['type']) => {
+    switch (type) {
+      case 'head_office':
+        return headOfficeIcon;
+      case 'registered_office':
+        return registeredOfficeIcon;
+      case 'corporate_campus':
+        return corporateCampusIcon;
+      default:
+        return regionalSupportIcon;
+    }
+  };
 
   return (
     <div className="relative w-full h-full min-h-[420px] rounded-xl overflow-hidden shadow-inner border border-slate-800">
@@ -108,10 +146,10 @@ export const MapView: React.FC<MapProps> = ({
 
         {searchCenter && (
           <>
-            <Marker position={searchCenter}>
+            <Marker position={searchCenter} icon={searchLocationIcon}>
               <Popup>
                 <div className="text-xs text-slate-800">
-                  <span className="font-bold block text-sm">📍 Searched Reference Point</span>
+                  <span className="font-bold block text-sm text-rose-700">🎯 Captain Target Point</span>
                   {searchedLocation?.name}
                 </div>
               </Popup>
@@ -131,7 +169,7 @@ export const MapView: React.FC<MapProps> = ({
           </>
         )}
 
-        {/* City Markers */}
+        {/* Official Servicing City Markers */}
         {(activeTab === 'cities' || activeTab === undefined) &&
           cities.map((city) => {
             const isInside = (city.distance ?? 999) <= radiusKm;
@@ -153,18 +191,24 @@ export const MapView: React.FC<MapProps> = ({
 
                 <Marker
                   position={[city.lat, city.lng]}
+                  icon={cityIcon}
                   eventHandlers={{
                     click: () => onSelectCity?.(city)
                   }}
                 >
                   <Popup>
                     <div className="text-slate-900 text-xs p-1">
-                      <div className="font-bold text-sm text-amber-700">{city.name}</div>
+                      <div className="flex items-center space-x-1 mb-1">
+                        <span className="bg-amber-400 text-slate-950 px-1 py-0.2 rounded font-bold text-[9px] uppercase">
+                          Official City Hub
+                        </span>
+                        <div className="font-bold text-sm text-amber-800">{city.name}</div>
+                      </div>
                       <div className="text-slate-500 font-medium mb-1">{city.state}</div>
                       {city.distance !== undefined && (
                         <div className="font-semibold text-slate-700 mb-1">
                           Distance:{' '}
-                          <span className={isInside ? 'text-emerald-700' : 'text-slate-600'}>
+                          <span className={isInside ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
                             {city.distance} km
                           </span>{' '}
                           {isInside ? '🟢 Eligible' : '⚪ Out of range'}
@@ -187,32 +231,36 @@ export const MapView: React.FC<MapProps> = ({
             );
           })}
 
-        {/* City Office Walk-in Markers */}
+        {/* Corporate & Registered Office Markers */}
         {offices.map((office) => {
           const isNearby = (office.distance ?? 999) <= radiusKm;
           return (
             <Marker
               key={office.id}
               position={[office.lat, office.lng]}
+              icon={getOfficeIcon(office.type)}
               eventHandlers={{
                 click: () => onSelectOffice?.(office)
               }}
             >
               <Popup>
-                <div className="text-slate-900 text-xs p-1 max-w-[220px]">
+                <div className="text-slate-900 text-xs p-1 max-w-[240px]">
                   <div className="flex items-center space-x-1.5 mb-1">
                     <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">
-                      Walk-in Hub
+                      {office.type.replace('_', ' ')}
                     </span>
                     <span className="font-bold text-sm text-blue-950 truncate">{office.name}</span>
                   </div>
-                  <div className="text-slate-600 text-[11px] mb-1 leading-snug">{office.address}</div>
+                  <div className="text-slate-700 text-[11px] mb-1 leading-snug">{office.address}</div>
                   <div className="text-slate-500 text-[10px] font-medium mb-1">
                     PIN: {office.pincode} • Timing: {office.timing}
                   </div>
+                  <div className="text-[9px] text-blue-700 font-semibold mb-1">
+                    Source: {office.verificationSource}
+                  </div>
                   {office.distance !== undefined && (
                     <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1">
-                      Distance: <span className={isNearby ? 'text-emerald-700' : 'text-blue-700'}>{office.distance} km</span>
+                      Distance: <span className={isNearby ? 'text-emerald-700 font-bold' : 'text-blue-700'}>{office.distance} km</span>
                     </div>
                   )}
                 </div>
