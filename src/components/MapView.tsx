@@ -70,12 +70,12 @@ const createCustomIcon = (bgColor: string, symbol: string) => {
   });
 };
 
-const cityIcon = createCustomIcon('#F9C80E', 'R', 'City Hub');
-const headOfficeIcon = createCustomIcon('#3B82F6', '🏢', 'Head Office');
-const registeredOfficeIcon = createCustomIcon('#8B5CF6', '🏛️', 'Registered Office');
-const corporateCampusIcon = createCustomIcon('#10B981', '🏬', 'Corporate Campus');
-const regionalSupportIcon = createCustomIcon('#06B6D4', '📍', 'Support Hub');
-const searchLocationIcon = createCustomIcon('#EF4444', '🎯', 'Target');
+const cityIcon = createCustomIcon('#F9C80E', 'R');
+const headOfficeIcon = createCustomIcon('#3B82F6', '🏢');
+const registeredOfficeIcon = createCustomIcon('#8B5CF6', '🏛️');
+const corporateCampusIcon = createCustomIcon('#10B981', '🏬');
+const regionalSupportIcon = createCustomIcon('#06B6D4', '📍');
+const searchLocationIcon = createCustomIcon('#EF4444', '🎯');
 
 function MapViewController({
   center,
