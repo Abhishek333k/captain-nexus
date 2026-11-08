@@ -197,10 +197,10 @@ export function App() {
                 CAPTAIN NEXUS
               </span>
               <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-semibold">
-                NETWORK RADAR
+                RAPIDO
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 leading-none">95 Active Servicing Hubs • SilentVault Geospatial Intelligence</p>
+            <p className="text-[10px] text-slate-400 leading-none">95 Active Operating Cities • Roppen Statutory Directory</p>
           </div>
         </div>
 
