@@ -1,12 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { auth } from './firebase';
+import { AdminLogin } from './components/AdminLogin';
 import { RAPIDO_OFFICIAL_CITIES, City } from '../../src/data/cities';
 import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../src/data/offices';
 
 export default function AdminApp() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries'>('cities');
   const [cities, setCities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices, setOffices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // New city form state
   const [newCityName, setNewCityName] = useState('');
@@ -18,6 +32,10 @@ export default function AdminApp() {
   // Office edit state
   const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
   const [landmarkNote, setLandmarkNote] = useState('');
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+  };
 
   const handleToggleCity = (id: string) => {
     setCities((prev) =>
@@ -54,6 +72,21 @@ export default function AdminApp() {
     setEditingOfficeId(null);
   };
 
+  if (isAuthLoading) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center text-slate-400 text-xs">
+        <div className="flex items-center space-x-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></div>
+          <span>Verifying administrator authorization...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <AdminLogin onLoginSuccess={() => {}} />;
+  }
+
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
       {/* Admin Top Header */}
@@ -69,35 +102,44 @@ export default function AdminApp() {
                 Zone B Admin
               </span>
             </div>
-            <p className="text-[10px] text-slate-400">admin.taxi.silenvault.com • Authenticated Operations Portal</p>
+            <p className="text-[10px] text-slate-400">admin.taxi.silenvault.com • {currentUser.email}</p>
           </div>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        {/* Tab Controls & Sign Out */}
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setActiveTab('cities')}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                activeTab === 'cities' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Manage Cities ({cities.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('offices')}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                activeTab === 'offices' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Registered Offices ({offices.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('boundaries')}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                activeTab === 'boundaries' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              GeoJSON Editor
+            </button>
+          </div>
+
           <button
-            onClick={() => setActiveTab('cities')}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'cities' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            onClick={handleSignOut}
+            className="px-3 py-1 text-xs rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-slate-300 font-semibold transition-colors"
           >
-            Manage Cities ({cities.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('offices')}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'offices' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Registered Offices ({offices.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('boundaries')}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'boundaries' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            GeoJSON Editor
+            Sign Out
           </button>
         </div>
       </header>
@@ -341,3 +383,4 @@ export default function AdminApp() {
     </div>
   );
 }
+
