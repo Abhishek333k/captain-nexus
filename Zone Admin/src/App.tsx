@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { auth } from './firebase';
 import { AdminLogin } from './components/AdminLogin';
-import { RAPIDO_OFFICIAL_CITIES, City } from '../../src/data/cities';
-import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../src/data/offices';
+import { RAPIDO_OFFICIAL_CITIES, City } from '../../Zone Rapido/src/data/cities';
+import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../Zone Rapido/src/data/offices';
 
 const AUTHORIZED_ADMIN_EMAILS = [
   'mabhishekramesh1@gmail.com'
