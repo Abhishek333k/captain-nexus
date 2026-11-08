@@ -148,11 +148,12 @@ export const MapView: React.FC<MapProps> = ({
             key={selectedCityName ?? 'active-boundary'}
             data={activeCityBoundary}
             style={() => ({
-              color: isCaptainInsideBoundary ? '#10B981' : '#3B82F6',
-              weight: 2.5,
-              fillColor: isCaptainInsideBoundary ? '#34D399' : '#60A5FA',
+              color: isCaptainInsideBoundary ? '#10B981' : '#F59E0B',
+              weight: 3.5,
+              opacity: 0.95,
+              fillColor: isCaptainInsideBoundary ? '#10B981' : '#FBBF24',
               fillOpacity: 0.22,
-              dashArray: '4, 4'
+              dashArray: '6, 6'
             })}
           />
         )}

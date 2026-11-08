@@ -30,32 +30,43 @@ export async function fetchCityBoundary(cityName: string, stateName: string): Pr
 
   // 2. Fetch official municipal border polygon from OpenStreetMap Nominatim
   const cleanName = cityName.split('(')[0].trim();
-  const query = `${cleanName}, ${stateName}, India`;
-  const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&limit=1&q=${encodeURIComponent(
-    query
-  )}`;
+  const searchQueries = [
+    `${cleanName} Municipal Corporation, ${stateName}, India`,
+    `Greater ${cleanName}, ${stateName}, India`,
+    `${cleanName}, ${stateName}, India`,
+    `${cleanName} District, ${stateName}, India`
+  ];
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    if (Array.isArray(data) && data[0]?.geojson) {
-      const geojson = data[0].geojson;
-      try {
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            cityName,
-            geojson,
-            cachedAt: Date.now()
-          })
-        );
-      } catch {
-        // Handle storage quota limits gracefully
+  for (const query of searchQueries) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&limit=1&q=${encodeURIComponent(
+        query
+      )}`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'CaptainNexus/1.0' } });
+      const data = await res.json();
+      if (
+        Array.isArray(data) &&
+        data[0]?.geojson &&
+        (data[0].geojson.type === 'Polygon' || data[0].geojson.type === 'MultiPolygon')
+      ) {
+        const geojson = data[0].geojson;
+        try {
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              cityName,
+              geojson,
+              cachedAt: Date.now()
+            })
+          );
+        } catch {
+          // Handle storage quota limits gracefully
+        }
+        return geojson;
       }
-      return geojson;
+    } catch {
+      // Continue to next query variant
     }
-  } catch {
-    return null;
   }
 
   return null;
@@ -120,3 +131,4 @@ export function isPointInsideGeoJSON(lat: number, lng: number, geojson: any): bo
 
   return false;
 }
+
