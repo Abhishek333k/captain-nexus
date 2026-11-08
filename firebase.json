@@ -2,7 +2,7 @@
   "hosting": [
     {
       "target": "taxi-landing",
-      "public": "taxi-landing",
+      "public": "Zone Taxi Home",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -17,7 +17,7 @@
     },
     {
       "target": "taxi-rapido",
-      "public": "dist",
+      "public": "Zone Rapido/dist",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -32,7 +32,7 @@
     },
     {
       "target": "taxi-admin",
-      "public": "Zone-B-Admin/dist",
+      "public": "Zone Admin/dist",
       "ignore": [
         "firebase.json",
         "**/.*",
