@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
-import { CityOffice, RAPIDO_VERIFIED_OFFICES } from './data/offices';
+import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
 import { calculateHaversineDistance } from './utils/geo';
 import { MapView } from './components/MapView';
+import { SearchAutocomplete } from './components/SearchAutocomplete';
 import { AdBanner } from './components/AdBanner';
 
 const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
@@ -17,65 +18,22 @@ const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
 export function App() {
   const [activeTab, setActiveTab] = useState<'cities' | 'offices'>('cities');
   const [cities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
-  const [offices] = useState<CityOffice[]>(RAPIDO_VERIFIED_OFFICES);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [offices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
   const [radiusKm, setRadiusKm] = useState<number>(30); // 30km standard limit
   const [selectedService, setSelectedService] = useState<ServiceType | 'all'>('all');
   const [searchedLocation, setSearchedLocation] = useState<{ name: string; lat: number; lng: number } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Layer Visibility Controls (Prevent map visual clutter)
   const [showCityPins, setShowCityPins] = useState(true);
   const [showOfficePins, setShowOfficePins] = useState(false);
   const [showSurgeHexagons, setShowSurgeHexagons] = useState(true);
 
-  // Free OpenStreetMap Nominatim Geocoding for Indian Towns / Pincodes / Cities
-  const handleSearchLocation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
+  // Direct selection from Google-style suggestive search autocomplete
+  const handleSelectLocation = (loc: { name: string; lat: number; lng: number }) => {
     setIsSearching(true);
-    setSearchError(null);
-
-    const queryLower = searchQuery.trim().toLowerCase();
-    const directCityMatch = cities.find(
-      (c) => c.name.toLowerCase().includes(queryLower) || queryLower.includes(c.name.toLowerCase())
-    );
-
-    if (directCityMatch) {
-      setSearchedLocation({
-        name: `${directCityMatch.name}, ${directCityMatch.state}`,
-        lat: directCityMatch.lat,
-        lng: directCityMatch.lng
-      });
-      setIsSearching(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery + ', India'
-        )}&limit=1`
-      );
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        const first = data[0];
-        setSearchedLocation({
-          name: first.display_name,
-          lat: parseFloat(first.lat),
-          lng: parseFloat(first.lon)
-        });
-      } else {
-        setSearchError('Location not found. Try searching with PIN code, City name, or District.');
-      }
-    } catch {
-      setSearchError('Network error while searching location. Please check internet connection.');
-    } finally {
-      setIsSearching(false);
-    }
+    setSearchedLocation(loc);
+    setIsSearching(false);
   };
 
   // Instant Haversine distance ranking for Cities
@@ -103,7 +61,7 @@ export function App() {
       .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
   }, [cities, selectedService, searchedLocation]);
 
-  // Instant Haversine distance ranking for Offices
+  // Instant Haversine distance ranking for Statutory Offices
   const rankedOffices = useMemo(() => {
     if (!searchedLocation) {
       return offices.map((o) => ({ ...o, distance: undefined }));
@@ -169,11 +127,11 @@ export function App() {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Corporate & Hubs ({rankedOffices.length})
+              Registered Offices ({rankedOffices.length})
             </button>
           </div>
 
-          {/* Quick Map Layer Toggles */}
+          {/* Map Layer Toggles */}
           <div className="hidden lg:flex items-center space-x-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800 text-[11px]">
             <button
               onClick={() => setShowCityPins((prev) => !prev)}
@@ -207,35 +165,15 @@ export function App() {
 
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left Panel */}
+        {/* Left Control Panel */}
         <div className="w-full md:w-[440px] lg:w-[480px] bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0">
-          {/* Controls Bar */}
           <div className="p-4 border-b border-slate-800 space-y-3 shrink-0">
-            {/* Search Input Form */}
-            <form onSubmit={handleSearchLocation} className="relative">
-              <input
-                type="text"
-                placeholder={
-                  activeTab === 'cities'
-                    ? 'Search Captain village, town, or 6-digit PIN...'
-                    : 'Search Captain city (e.g. Bengaluru, Hyderabad)...'
-                }
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all shadow-inner"
-              />
-              <button
-                type="submit"
-                disabled={isSearching}
-                className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg text-xs transition-colors disabled:opacity-50"
-              >
-                {isSearching ? '...' : 'Locate'}
-              </button>
-            </form>
-
-            {searchError && (
-              <p className="text-[11px] text-rose-400 px-1">{searchError}</p>
-            )}
+            {/* Google-Style Suggestive Autocomplete Search Bar */}
+            <SearchAutocomplete
+              onSelectLocation={handleSelectLocation}
+              isSearching={isSearching}
+              activeCityCount={cities.length}
+            />
 
             {/* Dynamic Commute Radius Slider */}
             <div>
@@ -303,10 +241,7 @@ export function App() {
                 <span className="font-semibold text-amber-300 truncate">{searchedLocation.name}</span>
               </div>
               <button
-                onClick={() => {
-                  setSearchedLocation(null);
-                  setSearchQuery('');
-                }}
+                onClick={() => setSearchedLocation(null)}
                 className="text-[11px] text-slate-400 hover:text-rose-400 shrink-0 font-medium"
               >
                 Clear
@@ -314,7 +249,7 @@ export function App() {
             </div>
           )}
 
-          {/* AdSense Placement (Auto-collapses if no ad served) */}
+          {/* AdSense Placement (Auto-collapses completely when no ad served) */}
           <AdBanner />
 
           {/* Tab 1: Active Cities List */}
@@ -387,12 +322,12 @@ export function App() {
             </div>
           )}
 
-          {/* Tab 2: Verified Corporate & Hubs List */}
+          {/* Tab 2: Legally Verified Statutory Offices List */}
           {activeTab === 'offices' && (
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
-                <span>Verified Corporate & Main Hubs ({rankedOffices.length})</span>
-                <span>Distance to Captain</span>
+                <span>Roppen Transportation Statutory Offices ({rankedOffices.length})</span>
+                <span>Distance to Reference Point</span>
               </div>
 
               {rankedOffices.map((office, idx) => {
@@ -400,39 +335,37 @@ export function App() {
                 return (
                   <div
                     key={office.id}
-                    className={`p-3 rounded-xl border transition-all ${
-                      isNearby
-                        ? 'bg-slate-950/90 border-blue-500/40 hover:border-blue-400 shadow-sm'
-                        : 'bg-slate-950/40 border-slate-800/80 opacity-75'
-                    }`}
+                    className="p-4 rounded-xl border bg-slate-950/90 border-blue-500/40 shadow-sm"
                   >
                     <div className="flex items-start justify-between">
-                      <div className="max-w-[75%]">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
-                          <h4 className="text-sm font-bold text-white tracking-wide truncate">
-                            {office.name}
-                          </h4>
+                      <div className="max-w-[80%]">
+                        <div className="flex items-center space-x-1.5 mb-1">
+                          <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                            {office.type.replace('_', ' ')}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">CIN: {office.cin}</span>
                         </div>
-                        <p className="text-[11px] text-slate-300 mt-1 leading-snug">
+                        <h4 className="text-sm font-bold text-white tracking-wide">
+                          {office.name}
+                        </h4>
+                        <div className="text-[11px] text-amber-300/90 font-medium mt-0.5">
+                          {office.legalEntity}
+                        </div>
+                        <p className="text-[11px] text-slate-300 mt-2 leading-snug">
                           {office.address}
                         </p>
-                        <div className="text-[10px] text-slate-400 mt-1.5 flex flex-wrap gap-2">
+                        <div className="text-[10px] text-slate-400 mt-2 flex flex-wrap gap-2">
                           <span>📍 PIN: {office.pincode}</span>
                           <span>🕒 {office.timing}</span>
                         </div>
-                        <div className="text-[9px] text-blue-400/80 mt-1">
-                          ✓ {office.verificationSource}
+                        <div className="text-[9px] text-emerald-400/90 mt-1.5 font-medium">
+                          ✓ {office.statutorySource}
                         </div>
                       </div>
 
                       {office.distance !== undefined ? (
                         <div className="text-right">
-                          <div
-                            className={`text-sm font-black ${
-                              isNearby ? 'text-blue-400' : 'text-slate-500'
-                            }`}
-                          >
+                          <div className="text-sm font-black text-blue-400">
                             {office.distance} km
                           </div>
                           <span
@@ -442,7 +375,7 @@ export function App() {
                                 : 'bg-slate-800 text-slate-500 border border-slate-700'
                             }`}
                           >
-                            {isNearby ? 'In Reach' : 'Far Hub'}
+                            {isNearby ? 'In Commute Reach' : 'National Office'}
                           </span>
                         </div>
                       ) : (
