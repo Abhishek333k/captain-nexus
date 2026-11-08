@@ -99,7 +99,8 @@ export function App() {
 
   // When closest city changes or user selects a city, fetch its official municipal boundary
   useEffect(() => {
-    const targetCity = selectedCity || (rankedCities.length > 0 && searchedLocation ? rankedCities[0] : null);
+    // Only resolve target city if user explicitly clicked a city OR searched a location
+    const targetCity = selectedCity || (searchedLocation && rankedCities.length > 0 ? rankedCities[0] : null);
     if (!targetCity) {
       setActiveBoundary(null);
       setIsInsideBoundary(false);
@@ -586,12 +587,13 @@ export function App() {
             cities={rankedCities}
             offices={rankedOffices}
             searchedLocation={searchedLocation}
+            selectedCity={selectedCity}
             radiusKm={radiusKm}
             showSurgeHexagons={showSurgeHexagons}
             showCityPins={showCityPins}
             showOfficePins={showOfficePins}
             activeCityBoundary={activeBoundary}
-            selectedCityName={selectedCity?.name ?? rankedCities[0]?.name}
+            selectedCityName={selectedCity?.name ?? (searchedLocation ? rankedCities[0]?.name : null)}
             isCaptainInsideBoundary={isInsideBoundary}
             onSelectCity={(city) => setSelectedCity(city)}
           />

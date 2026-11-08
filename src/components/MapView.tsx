@@ -18,6 +18,7 @@ interface MapProps {
   cities: City[];
   offices?: CityOffice[];
   searchedLocation: { name: string; lat: number; lng: number } | null;
+  selectedCity?: City | null;
   radiusKm: number;
   onSelectCity?: (city: City) => void;
   onSelectOffice?: (office: CityOffice) => void;
@@ -81,18 +82,22 @@ const corporateCampusIcon = createCustomIcon('#10B981', '🏬');
 const searchLocationIcon = createCustomIcon('#EF4444', '🎯');
 
 function MapViewController({
-  center,
+  searchCenter,
+  selectedCityCenter,
   radiusKm
 }: {
-  center: [number, number] | null;
+  searchCenter: [number, number] | null;
+  selectedCityCenter: [number, number] | null;
   radiusKm: number;
 }) {
   const map = useMap();
 
   useEffect(() => {
+    const center = searchCenter || selectedCityCenter;
     if (!center) return;
-    const latDelta = (radiusKm * 1.2) / 110.574;
-    const lngDelta = (radiusKm * 1.2) / (111.32 * Math.cos((center[0] * Math.PI) / 180));
+    const effectiveRadius = searchCenter ? radiusKm : 30;
+    const latDelta = (effectiveRadius * 1.3) / 110.574;
+    const lngDelta = (effectiveRadius * 1.3) / (111.32 * Math.cos((center[0] * Math.PI) / 180));
     const southWest: [number, number] = [center[0] - latDelta, center[1] - lngDelta];
     const northEast: [number, number] = [center[0] + latDelta, center[1] + lngDelta];
 
@@ -101,7 +106,7 @@ function MapViewController({
     } catch {
       map.setView(center, 10);
     }
-  }, [center, radiusKm, map]);
+  }, [searchCenter, selectedCityCenter, radiusKm, map]);
 
   return null;
 }
@@ -110,6 +115,7 @@ export const MapView: React.FC<MapProps> = ({
   cities,
   offices = [],
   searchedLocation,
+  selectedCity = null,
   radiusKm,
   onSelectCity,
   onSelectOffice,
@@ -124,6 +130,11 @@ export const MapView: React.FC<MapProps> = ({
     if (!searchedLocation) return null;
     return [searchedLocation.lat, searchedLocation.lng];
   }, [searchedLocation]);
+
+  const selectedCityCenter = useMemo<[number, number] | null>(() => {
+    if (!selectedCity) return null;
+    return [selectedCity.lat, selectedCity.lng];
+  }, [selectedCity]);
 
   const getOfficeIcon = (type: CityOffice['type']) => {
     return type === 'registered_office' ? registeredOfficeIcon : corporateCampusIcon;
@@ -149,10 +160,10 @@ export const MapView: React.FC<MapProps> = ({
             data={activeCityBoundary}
             style={() => ({
               color: isCaptainInsideBoundary ? '#10B981' : '#F59E0B',
-              weight: 3.5,
-              opacity: 0.95,
+              weight: 4,
+              opacity: 1,
               fillColor: isCaptainInsideBoundary ? '#10B981' : '#FBBF24',
-              fillOpacity: 0.22,
+              fillOpacity: 0.28,
               dashArray: '6, 6'
             })}
           />
@@ -284,7 +295,11 @@ export const MapView: React.FC<MapProps> = ({
             );
           })}
 
-        <MapViewController center={searchCenter} radiusKm={radiusKm} />
+        <MapViewController
+          searchCenter={searchCenter}
+          selectedCityCenter={selectedCityCenter}
+          radiusKm={radiusKm}
+        />
       </MapContainer>
     </div>
   );
