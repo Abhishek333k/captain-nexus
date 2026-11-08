@@ -32,10 +32,10 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
   // 2. Query OpenStreetMap Nominatim for official boundary polygon
   const cleanName = cityName.split('(')[0].trim();
   const searchQueries = [
+    `${cleanName} District, ${stateName}, India`,
     `${cleanName} Municipal Corporation, ${stateName}, India`,
     `Greater ${cleanName}, ${stateName}, India`,
-    `${cleanName}, ${stateName}, India`,
-    `${cleanName} District, ${stateName}, India`
+    `${cleanName}, ${stateName}, India`
   ];
 
   for (const query of searchQueries) {
