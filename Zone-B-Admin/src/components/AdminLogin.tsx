@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   signInWithEmailAndPassword, 
   signInWithPopup, 
   signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut
 } from 'firebase/auth';
@@ -30,6 +31,30 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Handle redirect result if signInWithRedirect was triggered
+  useEffect(() => {
+    let isMounted = true;
+    getRedirectResult(auth)
+      .then(async (credential) => {
+        if (!isMounted || !credential) return;
+        const userEmail = credential.user?.email;
+        if (!isAuthorizedAdmin(userEmail)) {
+          await signOut(auth);
+          setErrorMsg(`Access Denied: ${userEmail} is not an authorized administrator.`);
+          return;
+        }
+        onLoginSuccess();
+      })
+      .catch((err) => {
+        if (isMounted && err?.code !== 'auth/popup-closed-by-user') {
+          setErrorMsg(err.message || 'Authentication error.');
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [onLoginSuccess]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,8 +95,13 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
       try {
         userCredential = await signInWithPopup(auth, provider);
       } catch (popupErr: any) {
-        // Fallback to redirect if popup is blocked by COOP or browser security
-        if (popupErr?.code === 'auth/popup-blocked' || popupErr?.code === 'auth/popup-closed-by-user') {
+        // If popup is blocked, cancelled, or prevented by COOP, fallback to redirect seamlessly
+        if (
+          popupErr?.code === 'auth/popup-blocked' ||
+          popupErr?.code === 'auth/popup-closed-by-user' ||
+          popupErr?.code === 'auth/cancelled-popup-request' ||
+          popupErr?.message?.includes('Cross-Origin-Opener-Policy')
+        ) {
           await signInWithRedirect(auth, provider);
           return;
         }

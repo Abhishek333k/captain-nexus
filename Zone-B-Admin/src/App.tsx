@@ -5,6 +5,18 @@ import { AdminLogin } from './components/AdminLogin';
 import { RAPIDO_OFFICIAL_CITIES, City } from '../../src/data/cities';
 import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../src/data/offices';
 
+const AUTHORIZED_ADMIN_EMAILS = [
+  'mabhishekramesh1@gmail.com'
+];
+
+function isAuthorizedAdmin(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const cleanEmail = email.toLowerCase().trim();
+  if (AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) return true;
+  if (cleanEmail.endsWith('@silenvault.com')) return true;
+  return false;
+}
+
 export default function AdminApp() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -15,7 +27,15 @@ export default function AdminApp() {
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        if (!isAuthorizedAdmin(user.email)) {
+          await signOut(auth);
+          setCurrentUser(null);
+          setIsAuthLoading(false);
+          return;
+        }
+      }
       setCurrentUser(user);
       setIsAuthLoading(false);
     });
