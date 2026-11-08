@@ -109,7 +109,7 @@ export function App() {
     let isMounted = true;
     async function loadBoundary() {
       setIsLoadingBoundary(true);
-      const geo = await fetchCityBoundary(targetCity!.name, targetCity!.state);
+      const geo = await fetchCityBoundary(targetCity!.id, targetCity!.name, targetCity!.state);
       if (isMounted) {
         setActiveBoundary(geo);
         if (geo && searchedLocation) {
@@ -419,11 +419,15 @@ export function App() {
               {rankedCities.map((city, idx) => {
                 const currentDistance = city.distance;
                 const isEligible = currentDistance !== undefined && currentDistance <= radiusKm;
+                const isSelected = selectedCity?.id === city.id;
                 return (
                   <div
                     key={city.id}
-                    className={`p-3 rounded-xl border transition-all ${
-                      isEligible
+                    onClick={() => setSelectedCity(city)}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-amber-400 ring-2 ring-amber-400/40 bg-amber-400/10'
+                        : isEligible
                         ? isDarkMode
                           ? 'bg-slate-950/90 border-emerald-500/40 hover:border-emerald-400 shadow-sm'
                           : 'bg-white border-emerald-500/50 hover:border-emerald-500 shadow-sm'

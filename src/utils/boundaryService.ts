@@ -3,6 +3,8 @@
  * using free OpenStreetMap Nominatim polygons with local caching.
  */
 
+import { PRECOMPUTED_CITY_BOUNDARIES } from '../data/boundaries';
+
 export interface CityBoundary {
   cityName: string;
   geojson: any;
@@ -11,24 +13,23 @@ export interface CityBoundary {
 
 const CACHE_KEY_PREFIX = 'captain_nexus_boundary_';
 
-export async function fetchCityBoundary(cityName: string, stateName: string): Promise<any | null> {
+export async function fetchCityBoundary(cityId: string, cityName: string, stateName: string): Promise<any> {
   const cacheKey = `${CACHE_KEY_PREFIX}${cityName.toLowerCase().replace(/\s+/g, '_')}`;
 
-  // 1. Check localStorage cache
+  // 1. Check localStorage cache for high-res boundary
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const parsed: CityBoundary = JSON.parse(cached);
-      // Cache valid for 30 days
       if (Date.now() - parsed.cachedAt < 30 * 24 * 60 * 60 * 1000) {
         return parsed.geojson;
       }
     }
   } catch {
-    // Local storage unavailable or corrupt; continue to fetch
+    // Local storage unavailable
   }
 
-  // 2. Fetch official municipal border polygon from OpenStreetMap Nominatim
+  // 2. Query OpenStreetMap Nominatim for official boundary polygon
   const cleanName = cityName.split('(')[0].trim();
   const searchQueries = [
     `${cleanName} Municipal Corporation, ${stateName}, India`,
@@ -60,7 +61,7 @@ export async function fetchCityBoundary(cityName: string, stateName: string): Pr
             })
           );
         } catch {
-          // Handle storage quota limits gracefully
+          // Storage quota handled
         }
         return geojson;
       }
@@ -69,7 +70,8 @@ export async function fetchCityBoundary(cityName: string, stateName: string): Pr
     }
   }
 
-  return null;
+  // 3. Fallback: Always return instant precomputed boundary for the city
+  return PRECOMPUTED_CITY_BOUNDARIES[cityId] || null;
 }
 
 /**
