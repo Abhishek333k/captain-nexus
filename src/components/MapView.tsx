@@ -6,6 +6,7 @@ import {
   Circle,
   Polygon,
   Popup,
+  GeoJSON,
   useMap
 } from 'react-leaflet';
 import L from 'leaflet';
@@ -24,6 +25,9 @@ interface MapProps {
   showCityPins?: boolean;
   showOfficePins?: boolean;
   activeTab?: 'cities' | 'offices';
+  activeCityBoundary?: any | null;
+  selectedCityName?: string | null;
+  isCaptainInsideBoundary?: boolean;
 }
 
 function generateHexagonVertices(lat: number, lng: number, radiusKm: number): [number, number][] {
@@ -111,7 +115,10 @@ export const MapView: React.FC<MapProps> = ({
   onSelectOffice,
   showSurgeHexagons = true,
   showCityPins = true,
-  showOfficePins = true
+  showOfficePins = true,
+  activeCityBoundary = null,
+  selectedCityName = null,
+  isCaptainInsideBoundary = false
 }) => {
   const searchCenter = useMemo<[number, number] | null>(() => {
     if (!searchedLocation) return null;
@@ -134,6 +141,21 @@ export const MapView: React.FC<MapProps> = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {/* Dynamic Municipal City Boundary (GeoJSON Polygon) */}
+        {activeCityBoundary && (
+          <GeoJSON
+            key={selectedCityName ?? 'active-boundary'}
+            data={activeCityBoundary}
+            style={() => ({
+              color: isCaptainInsideBoundary ? '#10B981' : '#3B82F6',
+              weight: 2.5,
+              fillColor: isCaptainInsideBoundary ? '#34D399' : '#60A5FA',
+              fillOpacity: 0.22,
+              dashArray: '4, 4'
+            })}
+          />
+        )}
 
         {searchCenter && (
           <>

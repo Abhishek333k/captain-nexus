@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
 import { fetchBulkRoadDistances } from './utils/geo';
+import { fetchCityBoundary, isPointInsideGeoJSON } from './utils/boundaryService';
 import { MapView } from './components/MapView';
 import { SearchAutocomplete } from './components/SearchAutocomplete';
 import { AdBanner } from './components/AdBanner';
@@ -28,6 +29,12 @@ export function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [roadDistances, setRoadDistances] = useState<Record<string, number>>({});
   const [isCalculatingRoad, setIsCalculatingRoad] = useState(false);
+
+  // Dynamic Municipal City Boundary State (Option A)
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const [activeBoundary, setActiveBoundary] = useState<any | null>(null);
+  const [isLoadingBoundary, setIsLoadingBoundary] = useState(false);
+  const [isInsideBoundary, setIsInsideBoundary] = useState(false);
 
   // Layer Visibility Controls
   const [showCityPins, setShowCityPins] = useState(true);
@@ -89,6 +96,37 @@ export function App() {
         return a.distance - b.distance;
       });
   }, [offices, searchedLocation, roadDistances]);
+
+  // When closest city changes or user selects a city, fetch its official municipal boundary
+  useEffect(() => {
+    const targetCity = selectedCity || (rankedCities.length > 0 && searchedLocation ? rankedCities[0] : null);
+    if (!targetCity) {
+      setActiveBoundary(null);
+      setIsInsideBoundary(false);
+      return;
+    }
+
+    let isMounted = true;
+    async function loadBoundary() {
+      setIsLoadingBoundary(true);
+      const geo = await fetchCityBoundary(targetCity!.name, targetCity!.state);
+      if (isMounted) {
+        setActiveBoundary(geo);
+        if (geo && searchedLocation) {
+          const inside = isPointInsideGeoJSON(searchedLocation.lat, searchedLocation.lng, geo);
+          setIsInsideBoundary(inside);
+        } else {
+          setIsInsideBoundary(false);
+        }
+        setIsLoadingBoundary(false);
+      }
+    }
+
+    loadBoundary();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCity, searchedLocation, rankedCities]);
 
   // Automatically calculate true road distances via OSRM Table API when reference location is selected
   useEffect(() => {
@@ -189,6 +227,14 @@ export function App() {
             <div className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 font-medium">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
               <span>Calculating Road Routes...</span>
+            </div>
+          )}
+
+          {/* Municipal Boundary Status Indicator */}
+          {isLoadingBoundary && (
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-blue-500/10 border-blue-500/30 text-blue-400 font-medium">
+              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+              <span>Loading City Boundary...</span>
             </div>
           )}
 
@@ -318,21 +364,44 @@ export function App() {
             )}
           </div>
 
-          {/* Location Context Banner */}
+          {/* Location Context Banner & Boundary Status */}
           {searchedLocation && (
-            <div className={`px-4 py-2 border-b flex items-center justify-between text-xs ${
+            <div className={`px-4 py-2 border-b space-y-1.5 text-xs ${
               isDarkMode ? 'bg-slate-950/70 border-slate-800' : 'bg-slate-50 border-slate-200'
             }`}>
-              <div className="truncate mr-2">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Target: </span>
-                <span className="font-semibold text-amber-500 truncate">{searchedLocation.name}</span>
+              <div className="flex items-center justify-between">
+                <div className="truncate mr-2">
+                  <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Reference: </span>
+                  <span className="font-semibold text-amber-500 truncate">{searchedLocation.name}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setSearchedLocation(null);
+                    setSelectedCity(null);
+                  }}
+                  className="text-[11px] text-slate-400 hover:text-rose-500 shrink-0 font-medium"
+                >
+                  Clear
+                </button>
               </div>
-              <button
-                onClick={() => setSearchedLocation(null)}
-                className="text-[11px] text-slate-400 hover:text-rose-500 shrink-0 font-medium"
-              >
-                Clear
-              </button>
+
+              {/* Boundary Verdict */}
+              {activeBoundary && (
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/40 text-[11px]">
+                  <span className="text-slate-400">
+                    City Border: <strong className="text-slate-200">{selectedCity?.name ?? rankedCities[0]?.name}</strong>
+                  </span>
+                  {isInsideBoundary ? (
+                    <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded">
+                      Inside City Boundary (Full Shift Eligible)
+                    </span>
+                  ) : (
+                    <span className="bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium px-2 py-0.5 rounded">
+                      Outside Border (Commute Check Active)
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -517,6 +586,10 @@ export function App() {
             showSurgeHexagons={showSurgeHexagons}
             showCityPins={showCityPins}
             showOfficePins={showOfficePins}
+            activeCityBoundary={activeBoundary}
+            selectedCityName={selectedCity?.name ?? rankedCities[0]?.name}
+            isCaptainInsideBoundary={isInsideBoundary}
+            onSelectCity={(city) => setSelectedCity(city)}
           />
         </div>
       </div>
