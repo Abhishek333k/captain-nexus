@@ -17,6 +17,7 @@ const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
 ];
 
 export function App() {
+  const [isInitialSplash, setIsInitialSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<'cities' | 'offices'>('cities');
   const [cities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
@@ -40,6 +41,14 @@ export function App() {
   const [showCityPins, setShowCityPins] = useState(true);
   const [showOfficePins, setShowOfficePins] = useState(false);
   const [showSurgeHexagons, setShowSurgeHexagons] = useState(true);
+
+  // Splash screen auto dismiss
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialSplash(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSelectLocation = (loc: { name: string; lat: number; lng: number }) => {
     setIsSearching(true);
@@ -179,6 +188,23 @@ export function App() {
         isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
       }`}
     >
+      {/* Splash Screen */}
+      {isInitialSplash && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-opacity duration-300">
+          <div className="relative flex flex-col items-center">
+            <div className="w-20 h-20 mb-4 rounded-3xl bg-amber-400 p-3 shadow-2xl shadow-amber-400/20 flex items-center justify-center transform hover:scale-105 transition-transform">
+              <img src="/logo.svg" alt="Rapido Logo" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-xl font-black text-white tracking-wider">RAPIDO</h1>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Operating City Coverage & Statutory Directory</p>
+            <div className="mt-6 flex items-center space-x-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+              <span className="text-[11px] text-slate-500 font-mono">Loading active network...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Navbar */}
       <header
         className={`h-14 border-b px-4 flex items-center justify-between shrink-0 transition-colors ${
@@ -188,16 +214,16 @@ export function App() {
         }`}
       >
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center font-black text-slate-950 text-base shadow-lg shadow-amber-400/20">
-            R
+          <div className="w-9 h-9 rounded-xl bg-amber-400 p-1 flex items-center justify-center shadow-lg shadow-amber-400/20">
+            <img src="/logo.svg" alt="Rapido" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className={`font-bold text-sm tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                CAPTAIN NEXUS
+              <span className={`font-black text-sm tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                RAPIDO
               </span>
               <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-semibold">
-                RAPIDO
+                Coverage Directory
               </span>
             </div>
             <p className="text-[10px] text-slate-400 leading-none">95 Active Operating Cities • Roppen Statutory Directory</p>
