@@ -32,7 +32,7 @@ export function App() {
 
   // Dynamic Municipal City Boundary State (Option A)
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [activeBoundary, setActiveBoundary] = useState<any | null>(null);
+  const [activeBoundary, setActiveBoundary] = useState<{ cityName: string; geojson: any } | null>(null);
   const [isLoadingBoundary, setIsLoadingBoundary] = useState(false);
   const [isInsideBoundary, setIsInsideBoundary] = useState(false);
 
@@ -112,11 +112,19 @@ export function App() {
       setIsLoadingBoundary(true);
       const geo = await fetchCityBoundary(targetCity!.id, targetCity!.name, targetCity!.state);
       if (isMounted) {
-        setActiveBoundary(geo);
-        if (geo && searchedLocation) {
-          const inside = isPointInsideGeoJSON(searchedLocation.lat, searchedLocation.lng, geo);
-          setIsInsideBoundary(inside);
+        if (geo) {
+          setActiveBoundary({
+            cityName: targetCity!.name,
+            geojson: geo
+          });
+          if (searchedLocation) {
+            const inside = isPointInsideGeoJSON(searchedLocation.lat, searchedLocation.lng, geo);
+            setIsInsideBoundary(inside);
+          } else {
+            setIsInsideBoundary(false);
+          }
         } else {
+          setActiveBoundary(null);
           setIsInsideBoundary(false);
         }
         setIsLoadingBoundary(false);
@@ -592,8 +600,8 @@ export function App() {
             showSurgeHexagons={showSurgeHexagons}
             showCityPins={showCityPins}
             showOfficePins={showOfficePins}
-            activeCityBoundary={activeBoundary}
-            selectedCityName={selectedCity?.name ?? (searchedLocation ? rankedCities[0]?.name : null)}
+            activeCityBoundary={activeBoundary?.geojson ?? null}
+            selectedCityName={activeBoundary?.cityName ?? null}
             isCaptainInsideBoundary={isInsideBoundary}
             onSelectCity={(city) => setSelectedCity(city)}
           />
