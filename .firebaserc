@@ -1,0 +1,19 @@
+{
+  "projects": {},
+  "targets": {
+    "captain-nexus-199cc": {
+      "hosting": {
+        "taxi-landing": [
+          "silenvault-taxi"
+        ],
+        "taxi-rapido": [
+          "silenvault-taxi-rapido"
+        ],
+        "taxi-admin": [
+          "silenvault-taxi-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

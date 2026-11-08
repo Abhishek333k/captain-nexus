@@ -2,9 +2,24 @@ import React, { useState } from 'react';
 import { 
   signInWithEmailAndPassword, 
   signInWithPopup, 
-  GoogleAuthProvider 
+  signInWithRedirect,
+  GoogleAuthProvider,
+  signOut
 } from 'firebase/auth';
 import { auth } from '../firebase';
+
+// Strictly enforced list of authorized administrative emails
+const AUTHORIZED_ADMIN_EMAILS = [
+  'mabhishekramesh1@gmail.com'
+];
+
+function isAuthorizedAdmin(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const cleanEmail = email.toLowerCase().trim();
+  if (AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) return true;
+  if (cleanEmail.endsWith('@silenvault.com')) return true;
+  return false;
+}
 
 interface AdminLoginProps {
   onLoginSuccess: () => void;
@@ -22,7 +37,17 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userEmail = userCredential.user?.email;
+
+      // HARD GATE: Verify email authorization immediately
+      if (!isAuthorizedAdmin(userEmail)) {
+        await signOut(auth);
+        setErrorMsg(`Access Denied: ${userEmail} is not authorized to access the operations control plane.`);
+        setIsLoading(false);
+        return;
+      }
+
       onLoginSuccess();
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication failed. Please check credentials.');
@@ -37,7 +62,32 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+
+      let userCredential;
+      try {
+        userCredential = await signInWithPopup(auth, provider);
+      } catch (popupErr: any) {
+        // Fallback to redirect if popup is blocked by COOP or browser security
+        if (popupErr?.code === 'auth/popup-blocked' || popupErr?.code === 'auth/popup-closed-by-user') {
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        throw popupErr;
+      }
+
+      const userEmail = userCredential.user?.email;
+
+      // HARD GATE: Verify email authorization immediately
+      if (!isAuthorizedAdmin(userEmail)) {
+        await signOut(auth);
+        setErrorMsg(`Access Denied: ${userEmail} is not an authorized administrator. Database access blocked.`);
+        setIsLoading(false);
+        return;
+      }
+
       onLoginSuccess();
     } catch (err: any) {
       setErrorMsg(err.message || 'Google sign-in failed.');
@@ -48,11 +98,10 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen w-screen bg-slate-950 flex flex-col justify-center items-center p-4 selection:bg-rose-500 selection:text-white font-sans">
-      {/* Background radial glow */}
       <div className="fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#f43f5e_1px,transparent_1px)] [background-size:24px_24px]"></div>
 
       <div className="relative z-10 w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur">
-        {/* Header Badge */}
+        {/* Header */}
         <div className="flex items-center space-x-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center font-black text-white text-base shadow-lg shadow-rose-500/20">
             A
@@ -64,7 +113,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+          <div className="mb-4 p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-medium leading-relaxed">
             {errorMsg}
           </div>
         )}
@@ -83,7 +132,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Access Key / Password</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
             <input
               type="password"
               required
@@ -99,7 +148,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
             disabled={isLoading}
             className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition-colors shadow-lg shadow-rose-600/20 disabled:opacity-50"
           >
-            {isLoading ? 'Authenticating...' : 'Sign In to Control Plane'}
+            {isLoading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 
@@ -108,7 +157,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
             <div className="w-full border-t border-slate-800"></div>
           </div>
           <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-500">
-            <span className="bg-slate-900 px-2">Or continue with</span>
+            <span className="bg-slate-900 px-2">Authorized Accounts</span>
           </div>
         </div>
 
@@ -136,12 +185,12 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
               d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z"
             />
           </svg>
-          <span>Authorized Google Workspace Login</span>
+          <span>Continue with Google</span>
         </button>
 
         <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
           <p className="text-[11px] text-slate-500">
-            Access strictly restricted to authorized administrators via Firestore Security Rules.
+            Strict Gate: Only <span className="text-slate-400 font-mono">mabhishekramesh1@gmail.com</span> or <span className="text-slate-400 font-mono">@silenvault.com</span> are permitted.
           </p>
         </div>
       </div>
