@@ -133,11 +133,11 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
       <div className="relative z-10 w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur">
         {/* Header */}
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center font-black text-white text-base shadow-lg shadow-rose-500/20">
-            A
+          <div className="w-11 h-11 rounded-xl bg-slate-950 border border-slate-700/80 p-2 flex items-center justify-center shadow-lg shadow-rose-500/10">
+            <img src="/silenvault-logo.svg" alt="SilenVault" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h2 className="font-bold text-base text-white tracking-wide">OPERATIONS CONTROL PLANE</h2>
+            <h2 className="font-bold text-base text-white tracking-wide">SILENVAULT CONTROL PLANE</h2>
             <p className="text-xs text-slate-400 font-mono">admin.taxi.silenvault.com</p>
           </div>
         </div>

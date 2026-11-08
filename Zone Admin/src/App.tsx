@@ -20,11 +20,23 @@ function isAuthorizedAdmin(email: string | null | undefined): boolean {
 export default function AdminApp() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isSplashLoading, setIsSplashLoading] = useState(true);
+
+  // Platform switcher state (Rapido, Uber, Ola)
+  const [selectedPlatform, setSelectedPlatform] = useState<'rapido' | 'uber' | 'ola'>('rapido');
 
   const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries'>('cities');
   const [cities, setCities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices, setOffices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+
+  // Splash auto dismiss
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsSplashLoading(false);
+    }, 1100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -109,21 +121,76 @@ export default function AdminApp() {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
+      {/* SilenVault Splash Screen */}
+      {isSplashLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-opacity duration-300">
+          <div className="relative flex flex-col items-center">
+            <div className="w-24 h-24 mb-4 rounded-3xl bg-slate-900 border border-slate-800 p-4 shadow-2xl flex items-center justify-center">
+              <img src="/silenvault-logo.svg" alt="SilenVault Logo" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-lg font-black text-white tracking-widest uppercase">SILENVAULT</h1>
+            <p className="text-xs text-slate-400 mt-1 font-mono">Mobility Fleet Operations Control Plane</p>
+            <div className="mt-5 flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+              <span className="text-[11px] text-slate-500 font-mono">Authenticating session...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Admin Top Header */}
       <header className="h-14 border-b border-slate-800 bg-slate-900 px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center font-black text-white text-sm shadow-lg shadow-rose-500/20">
-            A
+          <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-700/80 p-1.5 flex items-center justify-center shadow-lg shadow-rose-500/10">
+            <img src="/silenvault-logo.svg" alt="SilenVault" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-sm tracking-wide text-white">CAPTAIN NEXUS CONTROL PLANE</span>
+              <span className="font-bold text-sm tracking-wide text-white">SILENVAULT MOBILITY</span>
               <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30 font-bold uppercase">
-                Zone B Admin
+                Zone Admin
               </span>
             </div>
             <p className="text-[10px] text-slate-400">admin.taxi.silenvault.com • {currentUser.email}</p>
           </div>
+        </div>
+
+        {/* Platform Selector (Rapido, Uber, Ola) */}
+        <div className="flex items-center space-x-2 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800">
+          <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Fleet:</span>
+          <button
+            onClick={() => setSelectedPlatform('rapido')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center space-x-1.5 ${
+              selectedPlatform === 'rapido'
+                ? 'bg-amber-400 text-slate-950 shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>Rapido</span>
+          </button>
+          <button
+            onClick={() => setSelectedPlatform('uber')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center space-x-1.5 ${
+              selectedPlatform === 'uber'
+                ? 'bg-white text-slate-950 shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span>Uber</span>
+          </button>
+          <button
+            onClick={() => setSelectedPlatform('ola')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center space-x-1.5 ${
+              selectedPlatform === 'ola'
+                ? 'bg-emerald-400 text-slate-950 shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>Ola</span>
+          </button>
         </div>
 
         {/* Tab Controls & Sign Out */}
@@ -135,7 +202,7 @@ export default function AdminApp() {
                 activeTab === 'cities' ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Manage Cities ({cities.length})
+              Cities ({cities.length})
             </button>
             <button
               onClick={() => setActiveTab('offices')}
@@ -143,7 +210,7 @@ export default function AdminApp() {
                 activeTab === 'offices' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Registered Offices ({offices.length})
+              Offices ({offices.length})
             </button>
             <button
               onClick={() => setActiveTab('boundaries')}
@@ -151,7 +218,7 @@ export default function AdminApp() {
                 activeTab === 'boundaries' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              GeoJSON Editor
+              GeoJSON
             </button>
           </div>
 
