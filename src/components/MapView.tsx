@@ -72,10 +72,8 @@ const createCustomIcon = (bgColor: string, symbol: string) => {
 };
 
 const cityIcon = createCustomIcon('#F9C80E', 'R');
-const headOfficeIcon = createCustomIcon('#3B82F6', '🏢');
 const registeredOfficeIcon = createCustomIcon('#8B5CF6', '🏛️');
 const corporateCampusIcon = createCustomIcon('#10B981', '🏬');
-const regionalSupportIcon = createCustomIcon('#06B6D4', '📍');
 const searchLocationIcon = createCustomIcon('#EF4444', '🎯');
 
 function MapViewController({
@@ -113,8 +111,7 @@ export const MapView: React.FC<MapProps> = ({
   onSelectOffice,
   showSurgeHexagons = true,
   showCityPins = true,
-  showOfficePins = true,
-  activeTab = 'cities'
+  showOfficePins = true
 }) => {
   const searchCenter = useMemo<[number, number] | null>(() => {
     if (!searchedLocation) return null;
@@ -122,16 +119,7 @@ export const MapView: React.FC<MapProps> = ({
   }, [searchedLocation]);
 
   const getOfficeIcon = (type: CityOffice['type']) => {
-    switch (type) {
-      case 'head_office':
-        return headOfficeIcon;
-      case 'registered_office':
-        return registeredOfficeIcon;
-      case 'corporate_campus':
-        return corporateCampusIcon;
-      default:
-        return regionalSupportIcon;
-    }
+    return type === 'registered_office' ? registeredOfficeIcon : corporateCampusIcon;
   };
 
   return (
@@ -260,7 +248,7 @@ export const MapView: React.FC<MapProps> = ({
                       PIN: {office.pincode} • Timing: {office.timing}
                     </div>
                     <div className="text-[9px] text-blue-700 font-semibold mb-1">
-                      Source: {office.verificationSource}
+                      Source: {office.statutorySource}
                     </div>
                     {office.distance !== undefined && (
                       <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RAPIDO_OFFICIAL_CITIES, City } from '../data/cities';
+import { RAPIDO_OFFICIAL_CITIES } from '../data/cities';
 
 export interface SuggestionItem {
   id: string;
@@ -13,13 +13,11 @@ export interface SuggestionItem {
 interface SearchAutocompleteProps {
   onSelectLocation: (loc: { name: string; lat: number; lng: number }) => void;
   isSearching: boolean;
-  activeCityCount: number;
 }
 
 export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   onSelectLocation,
-  isSearching,
-  activeCityCount
+  isSearching
 }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
@@ -85,7 +83,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           }));
 
           // Merge: local official cities first, then external places
-          setSuggestions((prev) => {
+          setSuggestions(() => {
             const combined = [...localMatches];
             externalMatches.forEach((ext) => {
               if (!combined.some((c) => Math.abs(c.lat - ext.lat) < 0.05 && Math.abs(c.lng - ext.lng) < 0.05)) {

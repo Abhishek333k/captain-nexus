@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
 import { calculateHaversineDistance } from './utils/geo';
@@ -172,7 +172,6 @@ export function App() {
             <SearchAutocomplete
               onSelectLocation={handleSelectLocation}
               isSearching={isSearching}
-              activeCityCount={cities.length}
             />
 
             {/* Dynamic Commute Radius Slider */}
@@ -330,7 +329,7 @@ export function App() {
                 <span>Distance to Reference Point</span>
               </div>
 
-              {rankedOffices.map((office, idx) => {
+              {rankedOffices.map((office) => {
                 const isNearby = office.distance !== undefined && office.distance <= radiusKm;
                 return (
                   <div
