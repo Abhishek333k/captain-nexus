@@ -44,14 +44,14 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
       return;
     }
 
-    // 1. Instant local matching for official Rapido cities (Supports English or Telugu script typing)
+    // 1. Instant local matching for official Rapido cities
     const localMatches: SuggestionItem[] = RAPIDO_OFFICIAL_CITIES
       .filter((c) => c.name.toLowerCase().includes(trimmed) || c.state.toLowerCase().includes(trimmed))
       .slice(0, 4)
       .map((c) => ({
         id: `city-${c.id}`,
         title: c.name,
-        subtitle: `${c.state} • అధికారిక సర్వీస్ కేంద్రం (Official Hub)`,
+        subtitle: `${c.state} • Official Service Hub`,
         lat: c.lat,
         lng: c.lng,
         type: 'official_city'
@@ -61,13 +61,13 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     setIsOpen(localMatches.length > 0);
     setHighlightIndex(-1);
 
-    // 2. Query free OpenStreetMap Nominatim with accept-language=te (Telugu primary)
+    // 2. Query free OpenStreetMap Nominatim strictly in English (accept-language=en)
     const debounceTimer = setTimeout(async () => {
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
             trimmed + ', India'
-          )}&countrycodes=in&limit=4&addressdetails=1&accept-language=te`
+          )}&countrycodes=in&limit=4&addressdetails=1&accept-language=en`
         );
         const data = await res.json();
 
@@ -136,7 +136,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
       <div className="relative">
         <input
           type="text"
-          placeholder="గ్రామం, పట్టణం, నగరం లేదా పిన్ కోడ్ సెర్చ్ చేయండి..."
+          placeholder="Search village, town, city or pincode..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim().length >= 2 && setIsOpen(true)}
@@ -168,12 +168,12 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             disabled={isSearching || !query.trim()}
             className="px-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg text-xs transition-colors disabled:opacity-40 h-full flex items-center justify-center"
           >
-            {isSearching ? '...' : 'శోధించు'}
+            {isSearching ? '...' : 'Search'}
           </button>
         </div>
       </div>
 
-      {/* Suggestive Autocomplete Dropdown in Telugu */}
+      {/* Suggestive Autocomplete Dropdown in English */}
       {isOpen && suggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-1.5 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/60 backdrop-blur-md">
           {suggestions.map((item, idx) => {
@@ -204,7 +204,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
                       : 'bg-slate-800 text-slate-400'
                   }`}
                 >
-                  {item.type === 'official_city' ? 'యాక్టివ్ సిటీ' : 'ప్రాంతం'}
+                  {item.type === 'official_city' ? 'Active City' : 'Location'}
                 </span>
               </div>
             );

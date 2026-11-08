@@ -140,7 +140,7 @@ export const MapView: React.FC<MapProps> = ({
             <Marker position={searchCenter} icon={searchLocationIcon}>
               <Popup>
                 <div className="text-xs text-slate-800">
-                  <span className="font-bold block text-sm text-rose-700">🎯 Target Reference Point</span>
+                  <span className="font-bold block text-sm text-rose-700">Target Reference Point</span>
                   {searchedLocation?.name}
                 </div>
               </Popup>
@@ -198,11 +198,11 @@ export const MapView: React.FC<MapProps> = ({
                       <div className="text-slate-500 font-medium mb-1">{city.state}</div>
                       {city.distance !== undefined && (
                         <div className="font-semibold text-slate-700 mb-1">
-                          Distance:{' '}
+                          Road Distance:{' '}
                           <span className={isInside ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
                             {city.distance} km
                           </span>{' '}
-                          {isInside ? '🟢 Eligible' : '⚪ Out of range'}
+                          {isInside ? 'Eligible' : 'Out of range'}
                         </div>
                       )}
                       <div className="flex flex-wrap gap-1 mt-1">
@@ -252,7 +252,7 @@ export const MapView: React.FC<MapProps> = ({
                     </div>
                     {office.distance !== undefined && (
                       <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1">
-                        Distance: <span className={isNearby ? 'text-emerald-700 font-bold' : 'text-blue-700'}>{office.distance} km</span>
+                        Road Distance: <span className={isNearby ? 'text-emerald-700 font-bold' : 'text-blue-700'}>{office.distance} km</span>
                       </div>
                     )}
                   </div>

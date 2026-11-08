@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
-import { calculateHaversineDistance, fetchRoadDistance } from './utils/geo';
+import { fetchBulkRoadDistances } from './utils/geo';
 import { MapView } from './components/MapView';
 import { SearchAutocomplete } from './components/SearchAutocomplete';
 import { AdBanner } from './components/AdBanner';
@@ -24,9 +24,8 @@ export function App() {
   const [searchedLocation, setSearchedLocation] = useState<{ name: string; lat: number; lng: number } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  // New Features: Dark/Light Mode & Driving Road Distance Toggle
+  // Theme & State
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isDrivingDistance, setIsDrivingDistance] = useState(false);
   const [roadDistances, setRoadDistances] = useState<Record<string, number>>({});
   const [isCalculatingRoad, setIsCalculatingRoad] = useState(false);
 
@@ -41,7 +40,7 @@ export function App() {
     setIsSearching(false);
   };
 
-  // Instant Haversine distance ranking for Cities
+  // Pure Road Distance ranking for Cities
   const rankedCities = useMemo(() => {
     let list = cities.filter((c) => c.active);
 
@@ -50,79 +49,68 @@ export function App() {
     }
 
     if (!searchedLocation) {
-      return list.map((c) => ({ ...c, distance: undefined, roadDistanceKm: undefined }));
+      return list.map((c) => ({ ...c, distance: undefined }));
     }
 
     return list
       .map((c) => {
-        const aerialDist = calculateHaversineDistance(
-          searchedLocation.lat,
-          searchedLocation.lng,
-          c.lat,
-          c.lng
-        );
+        const roadDist = roadDistances[c.id];
         return {
           ...c,
-          distance: aerialDist,
-          roadDistanceKm: roadDistances[c.id]
+          distance: roadDist
         };
       })
       .sort((a, b) => {
-        const distA = isDrivingDistance && a.roadDistanceKm ? a.roadDistanceKm : (a.distance ?? 0);
-        const distB = isDrivingDistance && b.roadDistanceKm ? b.roadDistanceKm : (b.distance ?? 0);
-        return distA - distB;
+        if (a.distance === undefined && b.distance === undefined) return 0;
+        if (a.distance === undefined) return 1;
+        if (b.distance === undefined) return -1;
+        return a.distance - b.distance;
       });
-  }, [cities, selectedService, searchedLocation, isDrivingDistance, roadDistances]);
+  }, [cities, selectedService, searchedLocation, roadDistances]);
 
-  // Instant Haversine distance ranking for Statutory Offices
+  // Pure Road Distance ranking for Statutory Offices
   const rankedOffices = useMemo(() => {
     if (!searchedLocation) {
-      return offices.map((o) => ({ ...o, distance: undefined, roadDistanceKm: undefined }));
+      return offices.map((o) => ({ ...o, distance: undefined }));
     }
 
     return offices
       .map((o) => {
-        const aerialDist = calculateHaversineDistance(
-          searchedLocation.lat,
-          searchedLocation.lng,
-          o.lat,
-          o.lng
-        );
+        const roadDist = roadDistances[o.id];
         return {
           ...o,
-          distance: aerialDist,
-          roadDistanceKm: roadDistances[o.id]
+          distance: roadDist
         };
       })
-      .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+      .sort((a, b) => {
+        if (a.distance === undefined && b.distance === undefined) return 0;
+        if (a.distance === undefined) return 1;
+        if (b.distance === undefined) return -1;
+        return a.distance - b.distance;
+      });
   }, [offices, searchedLocation, roadDistances]);
 
-  // Fetch actual driving road distance for top 5 closest items when driving mode is activated
+  // Automatically calculate true road distances via OSRM Table API when reference location is selected
   useEffect(() => {
-    if (!isDrivingDistance || !searchedLocation) return;
+    if (!searchedLocation) return;
 
     let isMounted = true;
     async function resolveRoadDistances() {
       setIsCalculatingRoad(true);
-      const topItems = (activeTab === 'cities' ? rankedCities : rankedOffices).slice(0, 5);
-      const updates: Record<string, number> = {};
 
-      for (const item of topItems) {
-        if (!roadDistances[item.id]) {
-          const roadDist = await fetchRoadDistance(
-            searchedLocation!.lat,
-            searchedLocation!.lng,
-            item.lat,
-            item.lng
-          );
-          if (roadDist !== null) {
-            updates[item.id] = roadDist;
-          }
-        }
-      }
+      const destinations = [
+        ...cities.map((c) => ({ id: c.id, lat: c.lat, lng: c.lng })),
+        ...offices.map((o) => ({ id: o.id, lat: o.lat, lng: o.lng }))
+      ];
 
-      if (isMounted && Object.keys(updates).length > 0) {
-        setRoadDistances((prev) => ({ ...prev, ...updates }));
+      const resolved = await fetchBulkRoadDistances(
+        searchedLocation!.lat,
+        searchedLocation!.lng,
+        destinations
+      );
+
+      if (isMounted && Object.keys(resolved).length > 0) {
+        setRoadDistances(resolved);
       }
       setIsCalculatingRoad(false);
     }
@@ -131,7 +119,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [isDrivingDistance, searchedLocation, activeTab]);
+  }, [searchedLocation, cities, offices]);
 
   return (
     <div
@@ -196,21 +184,13 @@ export function App() {
             </button>
           </div>
 
-          {/* Road vs Aerial Distance Toggle */}
-          <button
-            onClick={() => setIsDrivingDistance((prev) => !prev)}
-            title="Toggle between Straight-Line Aerial Distance and Actual Road Driving Distance"
-            className={`px-2.5 py-1 text-xs rounded-xl border font-semibold transition-all flex items-center space-x-1 ${
-              isDrivingDistance
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                : isDarkMode
-                ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span>{isDrivingDistance ? '🚗 Road' : '📏 Aerial'}</span>
-            {isCalculatingRoad && <span className="animate-pulse text-[10px]">...</span>}
-          </button>
+          {/* Road Distance Status Indicator */}
+          {isCalculatingRoad && (
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 font-medium">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span>Calculating Road Routes...</span>
+            </div>
+          )}
 
           {/* Dark / Light Theme Toggle */}
           <button
@@ -222,7 +202,7 @@ export function App() {
                 : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 shadow-sm'
             }`}
           >
-            {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+            {isDarkMode ? 'Light' : 'Dark'}
           </button>
 
           {/* Map Layer Toggles */}
@@ -364,11 +344,11 @@ export function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
                 <span>Rapido Live Cities ({rankedCities.length})</span>
-                <span>{isDrivingDistance ? '🚗 Driving Road Distance' : '📏 Straight-line Aerial'}</span>
+                <span>Road Transportation Distance</span>
               </div>
 
               {rankedCities.map((city, idx) => {
-                const currentDistance = isDrivingDistance && city.roadDistanceKm ? city.roadDistanceKm : city.distance;
+                const currentDistance = city.distance;
                 const isEligible = currentDistance !== undefined && currentDistance <= radiusKm;
                 return (
                   <div
@@ -395,7 +375,7 @@ export function App() {
 
                         {city.notes && (
                           <p className="text-[11px] text-amber-500/90 mt-1 leading-snug">
-                            💡 {city.notes}
+                            Note: {city.notes}
                           </p>
                         )}
 
@@ -453,11 +433,11 @@ export function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
                 <span>Roppen Transportation Statutory Offices ({rankedOffices.length})</span>
-                <span>Distance to Reference Point</span>
+                <span>Road Transportation Distance</span>
               </div>
 
               {rankedOffices.map((office) => {
-                const currentDistance = isDrivingDistance && office.roadDistanceKm ? office.roadDistanceKm : office.distance;
+                const currentDistance = office.distance;
                 const isNearby = currentDistance !== undefined && currentDistance <= radiusKm;
                 return (
                   <div
@@ -485,15 +465,15 @@ export function App() {
                         </p>
                         {office.landmarkNote && (
                           <p className="text-[11px] text-cyan-500 mt-1 font-medium">
-                            📍 Landmark: {office.landmarkNote}
+                            Landmark: {office.landmarkNote}
                           </p>
                         )}
                         <div className="text-[10px] text-slate-400 mt-2 flex flex-wrap gap-2">
                           <span>PIN: {office.pincode}</span>
-                          <span>🕒 {office.timing}</span>
+                          <span>Timing: {office.timing}</span>
                         </div>
                         <div className="text-[9px] text-emerald-500 mt-1.5 font-medium">
-                          ✓ {office.statutorySource}
+                          Source: {office.statutorySource}
                         </div>
                       </div>
 
