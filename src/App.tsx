@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
-import { fetchBulkRoadDistances } from './utils/geo';
+import { fetchBulkRoadDistances, calculateHaversineDistance } from './utils/geo';
 import { fetchCityBoundary, isPointInsideGeoJSON } from './utils/boundaryService';
 import { MapView } from './components/MapView';
 import { SearchAutocomplete } from './components/SearchAutocomplete';
@@ -47,7 +47,7 @@ export function App() {
     setIsSearching(false);
   };
 
-  // Pure Road Distance ranking for Cities
+  // Pure Road Distance ranking for Cities with instant fallback sorting
   const rankedCities = useMemo(() => {
     let list = cities.filter((c) => c.active);
 
@@ -62,20 +62,23 @@ export function App() {
     return list
       .map((c) => {
         const roadDist = roadDistances[c.id];
+        // If road distance is still calculating over network, use fast haversine estimate so ranking is never empty or scrambled
+        const estimate = calculateHaversineDistance(
+          searchedLocation.lat,
+          searchedLocation.lng,
+          c.lat,
+          c.lng
+        );
         return {
           ...c,
-          distance: roadDist
+          distance: roadDist ?? estimate,
+          isEstimated: roadDist === undefined
         };
       })
-      .sort((a, b) => {
-        if (a.distance === undefined && b.distance === undefined) return 0;
-        if (a.distance === undefined) return 1;
-        if (b.distance === undefined) return -1;
-        return a.distance - b.distance;
-      });
+      .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
   }, [cities, selectedService, searchedLocation, roadDistances]);
 
-  // Pure Road Distance ranking for Statutory Offices
+  // Pure Road Distance ranking for Statutory Offices with instant fallback sorting
   const rankedOffices = useMemo(() => {
     if (!searchedLocation) {
       return offices.map((o) => ({ ...o, distance: undefined }));
@@ -84,17 +87,19 @@ export function App() {
     return offices
       .map((o) => {
         const roadDist = roadDistances[o.id];
+        const estimate = calculateHaversineDistance(
+          searchedLocation.lat,
+          searchedLocation.lng,
+          o.lat,
+          o.lng
+        );
         return {
           ...o,
-          distance: roadDist
+          distance: roadDist ?? estimate,
+          isEstimated: roadDist === undefined
         };
       })
-      .sort((a, b) => {
-        if (a.distance === undefined && b.distance === undefined) return 0;
-        if (a.distance === undefined) return 1;
-        if (b.distance === undefined) return -1;
-        return a.distance - b.distance;
-      });
+      .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
   }, [offices, searchedLocation, roadDistances]);
 
   // When closest city changes or user selects a city, fetch its official municipal boundary

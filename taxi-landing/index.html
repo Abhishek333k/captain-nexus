@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SilenVault Mobility & Transport Grid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+    .glow-bg {
+      animation: pulse-glow 6s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-400 selection:text-slate-950 overflow-x-hidden font-sans">
+
+  <!-- Background decorative grid -->
+  <div class="fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]"></div>
+  <div class="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl glow-bg pointer-events-none"></div>
+
+  <!-- Header -->
+  <header class="relative z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur px-6 py-4 flex items-center justify-between max-w-7xl mx-auto w-full">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-black text-slate-950 shadow-lg shadow-amber-400/20">
+        T
+      </div>
+      <div>
+        <span class="font-bold text-sm tracking-wider text-white">SILENVAULT MOBILITY</span>
+        <span class="block text-[10px] text-slate-400 font-mono">taxi.silenvault.com</span>
+      </div>
+    </div>
+    <a href="https://admin.taxi.silenvault.com" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300 transition-colors">
+      Operations Login &rarr;
+    </a>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="relative z-10 max-w-5xl mx-auto px-6 py-16 text-center flex-1 flex flex-col items-center justify-center">
+    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-semibold mb-6">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+      <span>Live Transport Infrastructure Network</span>
+    </div>
+
+    <h1 class="text-4xl md:text-6xl font-black tracking-tight text-white mb-6">
+      Unified Fleet <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500">Intelligence Grid</span>
+    </h1>
+
+    <p class="text-slate-400 text-sm md:text-base max-w-2xl mx-auto mb-12 leading-relaxed">
+      Geospatial command systems, active servicing boundaries, and statutory operations networks across Indian urban transportation corridors.
+    </p>
+
+    <!-- Transport Networks Matrix Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl text-left">
+      <!-- Rapido Fleet (Active) -->
+      <a href="https://rapido.taxi.silenvault.com" class="group relative rounded-2xl border border-amber-400/40 bg-gradient-to-b from-slate-900/90 to-slate-950 p-6 shadow-xl hover:border-amber-400 transition-all hover:scale-[1.02]">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center font-black text-slate-950 text-base">
+            R
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            Active Grid
+          </span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">Rapido Network Radar</h3>
+        <p class="text-xs text-slate-400 leading-relaxed mb-4">
+          95 active servicing cities, municipal boundaries, Roppen Transportation statutory offices, and road commute calculators.
+        </p>
+        <span class="inline-flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+          Launch Radar &rarr;
+        </span>
+      </a>
+
+      <!-- Ola Fleet (Upcoming) -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 opacity-60">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-base border border-emerald-500/30">
+            O
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+            Planned
+          </span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-1">Ola Mobility Grid</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Upcoming cluster integration for auto, cab, and electric two-wheeler driver onboarding diagnostics.
+        </p>
+      </div>
+
+      <!-- Uber Fleet (Upcoming) -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 opacity-60">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-10 h-10 rounded-xl bg-slate-800 text-slate-200 flex items-center justify-center font-black text-base border border-slate-700">
+            U
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+            Planned
+          </span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-1">Uber Fleet Radar</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Upcoming pan-India cluster coverage, green zone hubs, and regional operations verification.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="relative z-10 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-2">
+      <span>&copy; 2026 SilenVault Operations. All rights reserved.</span>
+      <span class="font-mono text-[11px] text-slate-400">Node Cluster: Asia-South1 • SilenVault Secure Gateway</span>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,4 +1,30 @@
 /**
+ * Calculates Great-Circle distance between two coordinates in kilometers using Haversine formula.
+ * Used for instant, zero-latency ranking while road distances resolve.
+ */
+export function calculateHaversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(1));
+}
+
+/**
  * Calculates Driving Road Distance (km) between coordinates using free Open Source Routing Machine (OSRM) API.
  * Returns null if network fails or route cannot be found.
  */
@@ -45,7 +71,6 @@ export async function fetchBulkRoadDistances(
       const res = await fetch(url);
       const data = await res.json();
       if (data?.code === 'Ok' && Array.isArray(data.distances?.[0])) {
-        // Distances from source 0 to each destination (index 0 is source to source, 1..N are destinations)
         const row = data.distances[0];
         chunk.forEach((d, idx) => {
           const meters = row[idx + 1];
