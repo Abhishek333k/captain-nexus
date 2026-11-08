@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
-import { calculateHaversineDistance } from './utils/geo';
+import { calculateHaversineDistance, fetchRoadDistance } from './utils/geo';
 import { MapView } from './components/MapView';
 import { SearchAutocomplete } from './components/SearchAutocomplete';
 import { AdBanner } from './components/AdBanner';
@@ -24,12 +24,17 @@ export function App() {
   const [searchedLocation, setSearchedLocation] = useState<{ name: string; lat: number; lng: number } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Layer Visibility Controls (Prevent map visual clutter)
+  // New Features: Dark/Light Mode & Driving Road Distance Toggle
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDrivingDistance, setIsDrivingDistance] = useState(false);
+  const [roadDistances, setRoadDistances] = useState<Record<string, number>>({});
+  const [isCalculatingRoad, setIsCalculatingRoad] = useState(false);
+
+  // Layer Visibility Controls
   const [showCityPins, setShowCityPins] = useState(true);
   const [showOfficePins, setShowOfficePins] = useState(false);
   const [showSurgeHexagons, setShowSurgeHexagons] = useState(true);
 
-  // Direct selection from Google-style suggestive search autocomplete
   const handleSelectLocation = (loc: { name: string; lat: number; lng: number }) => {
     setIsSearching(true);
     setSearchedLocation(loc);
@@ -45,53 +50,113 @@ export function App() {
     }
 
     if (!searchedLocation) {
-      return list.map((c) => ({ ...c, distance: undefined }));
+      return list.map((c) => ({ ...c, distance: undefined, roadDistanceKm: undefined }));
     }
 
     return list
       .map((c) => {
-        const dist = calculateHaversineDistance(
+        const aerialDist = calculateHaversineDistance(
           searchedLocation.lat,
           searchedLocation.lng,
           c.lat,
           c.lng
         );
-        return { ...c, distance: dist };
+        return {
+          ...c,
+          distance: aerialDist,
+          roadDistanceKm: roadDistances[c.id]
+        };
       })
-      .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
-  }, [cities, selectedService, searchedLocation]);
+      .sort((a, b) => {
+        const distA = isDrivingDistance && a.roadDistanceKm ? a.roadDistanceKm : (a.distance ?? 0);
+        const distB = isDrivingDistance && b.roadDistanceKm ? b.roadDistanceKm : (b.distance ?? 0);
+        return distA - distB;
+      });
+  }, [cities, selectedService, searchedLocation, isDrivingDistance, roadDistances]);
 
   // Instant Haversine distance ranking for Statutory Offices
   const rankedOffices = useMemo(() => {
     if (!searchedLocation) {
-      return offices.map((o) => ({ ...o, distance: undefined }));
+      return offices.map((o) => ({ ...o, distance: undefined, roadDistanceKm: undefined }));
     }
 
     return offices
       .map((o) => {
-        const dist = calculateHaversineDistance(
+        const aerialDist = calculateHaversineDistance(
           searchedLocation.lat,
           searchedLocation.lng,
           o.lat,
           o.lng
         );
-        return { ...o, distance: dist };
+        return {
+          ...o,
+          distance: aerialDist,
+          roadDistanceKm: roadDistances[o.id]
+        };
       })
       .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
-  }, [offices, searchedLocation]);
+  }, [offices, searchedLocation, roadDistances]);
+
+  // Fetch actual driving road distance for top 5 closest items when driving mode is activated
+  useEffect(() => {
+    if (!isDrivingDistance || !searchedLocation) return;
+
+    let isMounted = true;
+    async function resolveRoadDistances() {
+      setIsCalculatingRoad(true);
+      const topItems = (activeTab === 'cities' ? rankedCities : rankedOffices).slice(0, 5);
+      const updates: Record<string, number> = {};
+
+      for (const item of topItems) {
+        if (!roadDistances[item.id]) {
+          const roadDist = await fetchRoadDistance(
+            searchedLocation!.lat,
+            searchedLocation!.lng,
+            item.lat,
+            item.lng
+          );
+          if (roadDist !== null) {
+            updates[item.id] = roadDist;
+          }
+        }
+      }
+
+      if (isMounted && Object.keys(updates).length > 0) {
+        setRoadDistances((prev) => ({ ...prev, ...updates }));
+      }
+      setIsCalculatingRoad(false);
+    }
+
+    resolveRoadDistances();
+    return () => {
+      isMounted = false;
+    };
+  }, [isDrivingDistance, searchedLocation, activeTab]);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 select-none overflow-hidden font-sans">
+    <div
+      className={`flex flex-col h-screen w-screen select-none overflow-hidden font-sans transition-colors duration-200 ${
+        isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
+      }`}
+    >
       {/* Top Navbar */}
-      <header className="h-14 border-b border-slate-800 bg-slate-900/90 px-4 flex items-center justify-between shrink-0">
+      <header
+        className={`h-14 border-b px-4 flex items-center justify-between shrink-0 transition-colors ${
+          isDarkMode
+            ? 'border-slate-800 bg-slate-900/90'
+            : 'border-slate-200 bg-white/95 shadow-sm'
+        }`}
+      >
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center font-black text-slate-950 text-base shadow-lg shadow-amber-400/20">
             R
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-sm tracking-wide text-white">CAPTAIN NEXUS</span>
-              <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-semibold">
+              <span className={`font-bold text-sm tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                CAPTAIN NEXUS
+              </span>
+              <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-semibold">
                 NETWORK RADAR
               </span>
             </div>
@@ -99,10 +164,10 @@ export function App() {
           </div>
         </div>
 
-        {/* Tab & Layer Controls */}
+        {/* Tab & Feature Controls */}
         <div className="flex items-center space-x-2">
           {/* Main List Mode */}
-          <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <div className={`flex p-1 rounded-xl border ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
             <button
               onClick={() => {
                 setActiveTab('cities');
@@ -111,7 +176,7 @@ export function App() {
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'cities'
                   ? 'bg-amber-400 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
               Active Cities ({rankedCities.length})
@@ -123,38 +188,69 @@ export function App() {
               }}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'offices'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
               Registered Offices ({rankedOffices.length})
             </button>
           </div>
 
+          {/* Road vs Aerial Distance Toggle */}
+          <button
+            onClick={() => setIsDrivingDistance((prev) => !prev)}
+            title="Toggle between Straight-Line Aerial Distance and Actual Road Driving Distance"
+            className={`px-2.5 py-1 text-xs rounded-xl border font-semibold transition-all flex items-center space-x-1 ${
+              isDrivingDistance
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                : isDarkMode
+                ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>{isDrivingDistance ? '🚗 Road' : '📏 Aerial'}</span>
+            {isCalculatingRoad && <span className="animate-pulse text-[10px]">...</span>}
+          </button>
+
+          {/* Dark / Light Theme Toggle */}
+          <button
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            title="Toggle Dark/Light Mode"
+            className={`px-2.5 py-1 text-xs rounded-xl border transition-all ${
+              isDarkMode
+                ? 'bg-slate-900 border-slate-800 text-amber-300 hover:bg-slate-800'
+                : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 shadow-sm'
+            }`}
+          >
+            {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+          </button>
+
           {/* Map Layer Toggles */}
-          <div className="hidden lg:flex items-center space-x-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800 text-[11px]">
+          <div className={`hidden xl:flex items-center space-x-1.5 px-2 py-1 rounded-xl border text-[11px] ${
+            isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
+          }`}>
             <button
               onClick={() => setShowCityPins((prev) => !prev)}
               className={`px-2 py-0.5 rounded font-medium transition-colors ${
-                showCityPins ? 'bg-amber-400/20 text-amber-300' : 'text-slate-500 hover:text-slate-300'
+                showCityPins ? 'bg-amber-400/20 text-amber-500' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
               Cities: {showCityPins ? 'ON' : 'OFF'}
             </button>
-            <span className="text-slate-700">|</span>
+            <span className="text-slate-400">|</span>
             <button
               onClick={() => setShowOfficePins((prev) => !prev)}
               className={`px-2 py-0.5 rounded font-medium transition-colors ${
-                showOfficePins ? 'bg-blue-500/20 text-blue-300' : 'text-slate-500 hover:text-slate-300'
+                showOfficePins ? 'bg-blue-500/20 text-blue-500' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
               Offices: {showOfficePins ? 'ON' : 'OFF'}
             </button>
-            <span className="text-slate-700">|</span>
+            <span className="text-slate-400">|</span>
             <button
               onClick={() => setShowSurgeHexagons((prev) => !prev)}
               className={`px-2 py-0.5 rounded font-medium transition-colors ${
-                showSurgeHexagons ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-500 hover:text-slate-300'
+                showSurgeHexagons ? 'bg-emerald-500/20 text-emerald-500' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
               Hex: {showSurgeHexagons ? 'ON' : 'OFF'}
@@ -166,8 +262,12 @@ export function App() {
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Control Panel */}
-        <div className="w-full md:w-[440px] lg:w-[480px] bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0">
-          <div className="p-4 border-b border-slate-800 space-y-3 shrink-0">
+        <div
+          className={`w-full md:w-[440px] lg:w-[480px] border-r flex flex-col h-full shrink-0 transition-colors ${
+            isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className={`p-4 border-b space-y-3 shrink-0 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
             {/* Google-Style Suggestive Autocomplete Search Bar */}
             <SearchAutocomplete
               onSelectLocation={handleSelectLocation}
@@ -176,11 +276,11 @@ export function App() {
 
             {/* Dynamic Commute Radius Slider */}
             <div>
-              <div className="flex justify-between items-center text-xs text-slate-300 mb-1">
-                <span className="font-semibold text-slate-400">
+              <div className="flex justify-between items-center text-xs mb-1">
+                <span className={`font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                   {activeTab === 'cities' ? 'Max Commute Limit:' : 'Proximity Radius:'}
                 </span>
-                <span className="font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                <span className="font-bold text-amber-500 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
                   {radiusKm} km
                 </span>
               </div>
@@ -191,14 +291,16 @@ export function App() {
                 step="5"
                 value={radiusKm}
                 onChange={(e) => setRadiusKm(Number(e.target.value))}
-                className="w-full accent-amber-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-amber-400 h-1.5 bg-slate-700/50 rounded-lg cursor-pointer"
               />
             </div>
 
             {/* Service Filter Matrix (Active in Cities tab) */}
             {activeTab === 'cities' && (
               <div>
-                <span className="block text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                <span className={`block text-[11px] font-semibold mb-1.5 uppercase tracking-wider ${
+                  isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                }`}>
                   Service Category Filter
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -208,7 +310,9 @@ export function App() {
                     className={`px-2.5 py-1 text-[11px] rounded-lg border font-medium transition-all ${
                       selectedService === 'all'
                         ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold shadow'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                        : isDarkMode
+                        ? 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     All
@@ -221,7 +325,9 @@ export function App() {
                       className={`px-2.5 py-1 text-[11px] rounded-lg border font-medium transition-all ${
                         selectedService === opt.id
                           ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold shadow'
-                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                          : isDarkMode
+                          ? 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300'
                       }`}
                     >
                       {opt.label}
@@ -234,21 +340,23 @@ export function App() {
 
           {/* Location Context Banner */}
           {searchedLocation && (
-            <div className="px-4 py-2 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between text-xs">
+            <div className={`px-4 py-2 border-b flex items-center justify-between text-xs ${
+              isDarkMode ? 'bg-slate-950/70 border-slate-800' : 'bg-slate-50 border-slate-200'
+            }`}>
               <div className="truncate mr-2">
-                <span className="text-slate-400">Target: </span>
-                <span className="font-semibold text-amber-300 truncate">{searchedLocation.name}</span>
+                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Target: </span>
+                <span className="font-semibold text-amber-500 truncate">{searchedLocation.name}</span>
               </div>
               <button
                 onClick={() => setSearchedLocation(null)}
-                className="text-[11px] text-slate-400 hover:text-rose-400 shrink-0 font-medium"
+                className="text-[11px] text-slate-400 hover:text-rose-500 shrink-0 font-medium"
               >
                 Clear
               </button>
             </div>
           )}
 
-          {/* AdSense Placement (Auto-collapses completely when no ad served) */}
+          {/* AdSense Placement */}
           <AdBanner />
 
           {/* Tab 1: Active Cities List */}
@@ -256,33 +364,48 @@ export function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
                 <span>Rapido Live Cities ({rankedCities.length})</span>
-                <span>Sorted by Nearest Proximity</span>
+                <span>{isDrivingDistance ? '🚗 Driving Road Distance' : '📏 Straight-line Aerial'}</span>
               </div>
 
               {rankedCities.map((city, idx) => {
-                const isEligible = city.distance !== undefined && city.distance <= radiusKm;
+                const currentDistance = isDrivingDistance && city.roadDistanceKm ? city.roadDistanceKm : city.distance;
+                const isEligible = currentDistance !== undefined && currentDistance <= radiusKm;
                 return (
                   <div
                     key={city.id}
                     className={`p-3 rounded-xl border transition-all ${
                       isEligible
-                        ? 'bg-slate-950/90 border-emerald-500/40 hover:border-emerald-400 shadow-sm'
-                        : 'bg-slate-950/40 border-slate-800/80 opacity-75'
+                        ? isDarkMode
+                          ? 'bg-slate-950/90 border-emerald-500/40 hover:border-emerald-400 shadow-sm'
+                          : 'bg-white border-emerald-500/50 hover:border-emerald-500 shadow-sm'
+                        : isDarkMode
+                        ? 'bg-slate-950/40 border-slate-800/80 opacity-75'
+                        : 'bg-slate-50 border-slate-200 opacity-75'
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="max-w-[70%]">
                         <div className="flex items-center space-x-2">
                           <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
-                          <h4 className="text-sm font-bold text-white tracking-wide">{city.name}</h4>
+                          <h4 className={`text-sm font-bold tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                            {city.name}
+                          </h4>
                           <span className="text-[10px] text-slate-400">({city.state})</span>
                         </div>
+
+                        {city.notes && (
+                          <p className="text-[11px] text-amber-500/90 mt-1 leading-snug">
+                            💡 {city.notes}
+                          </p>
+                        )}
 
                         <div className="flex flex-wrap gap-1 mt-2">
                           {city.services.map((svc) => (
                             <span
                               key={svc}
-                              className="bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[9px] uppercase font-semibold"
+                              className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-semibold ${
+                                isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-700'
+                              }`}
                             >
                               {svc.replace('_', ' ')}
                             </span>
@@ -290,27 +413,31 @@ export function App() {
                         </div>
                       </div>
 
-                      {city.distance !== undefined ? (
-                        <div className="text-right">
+                      {currentDistance !== undefined ? (
+                        <div className="text-right shrink-0">
                           <div
                             className={`text-sm font-black ${
-                              isEligible ? 'text-emerald-400' : 'text-slate-500'
+                              isEligible ? 'text-emerald-500' : isDarkMode ? 'text-slate-500' : 'text-slate-400'
                             }`}
                           >
-                            {city.distance} km
+                            {currentDistance} km
                           </div>
                           <span
                             className={`inline-block mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded ${
                               isEligible
-                                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                                : 'bg-slate-800 text-slate-500 border border-slate-700'
+                                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                                : isDarkMode
+                                ? 'bg-slate-800 text-slate-500 border border-slate-700'
+                                : 'bg-slate-200 text-slate-600 border border-slate-300'
                             }`}
                           >
                             {isEligible ? 'Eligible' : 'Out of Range'}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-600 bg-slate-800/60 px-2 py-0.5 rounded">
+                        <span className={`text-[10px] px-2 py-0.5 rounded ${
+                          isDarkMode ? 'bg-slate-800/60 text-slate-500' : 'bg-slate-200 text-slate-600'
+                        }`}>
                           Active Hub
                         </span>
                       )}
@@ -330,55 +457,65 @@ export function App() {
               </div>
 
               {rankedOffices.map((office) => {
-                const isNearby = office.distance !== undefined && office.distance <= radiusKm;
+                const currentDistance = isDrivingDistance && office.roadDistanceKm ? office.roadDistanceKm : office.distance;
+                const isNearby = currentDistance !== undefined && currentDistance <= radiusKm;
                 return (
                   <div
                     key={office.id}
-                    className="p-4 rounded-xl border bg-slate-950/90 border-blue-500/40 shadow-sm"
+                    className={`p-4 rounded-xl border shadow-sm ${
+                      isDarkMode ? 'bg-slate-950/90 border-blue-500/40' : 'bg-white border-blue-500/40'
+                    }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div className="max-w-[80%]">
+                      <div className="max-w-[75%]">
                         <div className="flex items-center space-x-1.5 mb-1">
                           <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                             {office.type.replace('_', ' ')}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">CIN: {office.cin}</span>
                         </div>
-                        <h4 className="text-sm font-bold text-white tracking-wide">
+                        <h4 className={`text-sm font-bold tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                           {office.name}
                         </h4>
-                        <div className="text-[11px] text-amber-300/90 font-medium mt-0.5">
+                        <div className="text-[11px] text-amber-500 font-medium mt-0.5">
                           {office.legalEntity}
                         </div>
-                        <p className="text-[11px] text-slate-300 mt-2 leading-snug">
+                        <p className={`text-[11px] mt-2 leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                           {office.address}
                         </p>
+                        {office.landmarkNote && (
+                          <p className="text-[11px] text-cyan-500 mt-1 font-medium">
+                            📍 Landmark: {office.landmarkNote}
+                          </p>
+                        )}
                         <div className="text-[10px] text-slate-400 mt-2 flex flex-wrap gap-2">
-                          <span>📍 PIN: {office.pincode}</span>
+                          <span>PIN: {office.pincode}</span>
                           <span>🕒 {office.timing}</span>
                         </div>
-                        <div className="text-[9px] text-emerald-400/90 mt-1.5 font-medium">
+                        <div className="text-[9px] text-emerald-500 mt-1.5 font-medium">
                           ✓ {office.statutorySource}
                         </div>
                       </div>
 
-                      {office.distance !== undefined ? (
-                        <div className="text-right">
-                          <div className="text-sm font-black text-blue-400">
-                            {office.distance} km
+                      {currentDistance !== undefined ? (
+                        <div className="text-right shrink-0">
+                          <div className="text-sm font-black text-blue-500">
+                            {currentDistance} km
                           </div>
                           <span
                             className={`inline-block mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded ${
                               isNearby
-                                ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
-                                : 'bg-slate-800 text-slate-500 border border-slate-700'
+                                ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                                : isDarkMode
+                                ? 'bg-slate-800 text-slate-500 border border-slate-700'
+                                : 'bg-slate-200 text-slate-600 border border-slate-300'
                             }`}
                           >
-                            {isNearby ? 'In Commute Reach' : 'National Office'}
+                            {isNearby ? 'In Reach' : 'National Office'}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-bold">
+                        <span className="text-[10px] text-blue-500 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-bold">
                           {office.city}
                         </span>
                       )}
@@ -391,7 +528,7 @@ export function App() {
         </div>
 
         {/* Right / Interactive Map Canvas */}
-        <div className="flex-1 h-full p-3 bg-slate-950 flex flex-col">
+        <div className={`flex-1 h-full p-3 flex flex-col ${isDarkMode ? 'bg-slate-950' : 'bg-slate-100'}`}>
           <MapView
             cities={rankedCities}
             offices={rankedOffices}
@@ -400,7 +537,6 @@ export function App() {
             showSurgeHexagons={showSurgeHexagons}
             showCityPins={showCityPins}
             showOfficePins={showOfficePins}
-            activeTab={activeTab}
           />
         </div>
       </div>

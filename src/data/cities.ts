@@ -6,13 +6,16 @@ export interface City {
   lng: number;
   services: ('bike' | 'auto' | 'cab' | 'b2b' | 'e_rickshaw' | 'tuk_tuk')[];
   active: boolean;
+  notes?: string; // Executive landmark or operational notes (e.g., "High auto demand in railway station belt")
   distance?: number;
+  roadDistanceKm?: number;
 }
 
 export type ServiceType = 'bike' | 'auto' | 'cab' | 'b2b' | 'e_rickshaw' | 'tuk_tuk';
 
 /**
- * 95 Official Rapido Servicing Cities sourced directly from rapido.bike production sitemap
+ * 95 Official Rapido Servicing Cities sourced directly from rapido.bike production sitemap.
+ * Easily editable by adding or removing entries.
  */
 export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'agartala', name: 'Agartala', state: 'Tripura', lat: 23.8315, lng: 91.2868, services: ['bike', 'auto'], active: true },
@@ -24,7 +27,7 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'amritsar', name: 'Amritsar', state: 'Punjab', lat: 31.6340, lng: 74.8723, services: ['bike', 'auto', 'e_rickshaw'], active: true },
   { id: 'anantapur', name: 'Anantapur', state: 'Andhra Pradesh', lat: 14.6819, lng: 77.6006, services: ['bike', 'auto'], active: true },
   { id: 'asansol', name: 'Asansol', state: 'West Bengal', lat: 23.6739, lng: 86.9524, services: ['bike', 'auto', 'tuk_tuk'], active: true },
-  { id: 'bangalore', name: 'Bangalore (Bengaluru)', state: 'Karnataka', lat: 12.9716, lng: 77.5946, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
+  { id: 'bangalore', name: 'Bangalore (Bengaluru)', state: 'Karnataka', lat: 12.9716, lng: 77.5946, services: ['bike', 'auto', 'cab', 'b2b'], active: true, notes: 'Corporate HQ hub • 24x7 service availability across all categories' },
   { id: 'bareilly', name: 'Bareilly', state: 'Uttar Pradesh', lat: 28.3670, lng: 79.4304, services: ['bike', 'auto', 'e_rickshaw'], active: true },
   { id: 'bhagalpur', name: 'Bhagalpur', state: 'Bihar', lat: 25.2425, lng: 86.9842, services: ['bike', 'auto', 'e_rickshaw'], active: true },
   { id: 'bhilai', name: 'Bhilai', state: 'Chhattisgarh', lat: 21.2144, lng: 81.3805, services: ['bike', 'auto'], active: true },
@@ -37,7 +40,7 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'chennai', name: 'Chennai', state: 'Tamil Nadu', lat: 13.0827, lng: 80.2707, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
   { id: 'coimbatore', name: 'Coimbatore', state: 'Tamil Nadu', lat: 11.0168, lng: 76.9558, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'dehradun', name: 'Dehradun', state: 'Uttarakhand', lat: 30.3165, lng: 78.0322, services: ['bike', 'auto'], active: true },
-  { id: 'delhi', name: 'Delhi NCR (Delhi/Noida/Gurugram)', state: 'Delhi NCR', lat: 28.7041, lng: 77.1025, services: ['bike', 'auto', 'cab', 'e_rickshaw', 'b2b'], active: true },
+  { id: 'delhi', name: 'Delhi NCR (Delhi/Noida/Gurugram)', state: 'Delhi NCR', lat: 28.7041, lng: 77.1025, services: ['bike', 'auto', 'cab', 'e_rickshaw', 'b2b'], active: true, notes: 'Includes Delhi, Noida, Greater Noida, Gurugram, Ghaziabad, and Faridabad' },
   { id: 'dhanbad', name: 'Dhanbad', state: 'Jharkhand', lat: 23.7957, lng: 86.4304, services: ['bike', 'auto'], active: true },
   { id: 'dibrugarh', name: 'Dibrugarh', state: 'Assam', lat: 27.4728, lng: 94.9120, services: ['bike', 'auto'], active: true },
   { id: 'durgapur', name: 'Durgapur', state: 'West Bengal', lat: 23.5204, lng: 87.3119, services: ['bike', 'auto', 'tuk_tuk'], active: true },
@@ -47,7 +50,7 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'guntur', name: 'Guntur', state: 'Andhra Pradesh', lat: 16.3067, lng: 80.4365, services: ['bike', 'auto'], active: true },
   { id: 'guwahati', name: 'Guwahati', state: 'Assam', lat: 26.1445, lng: 91.7362, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'gwalior', name: 'Gwalior', state: 'Madhya Pradesh', lat: 26.2183, lng: 78.1828, services: ['bike', 'auto', 'e_rickshaw'], active: true },
-  { id: 'hyderabad', name: 'Hyderabad', state: 'Telangana', lat: 17.3850, lng: 78.4867, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
+  { id: 'hyderabad', name: 'Hyderabad', state: 'Telangana', lat: 17.3850, lng: 78.4867, services: ['bike', 'auto', 'cab', 'b2b'], active: true, notes: 'Registered Office hub in Madhapur • Extensive auto and bike density' },
   { id: 'indore', name: 'Indore', state: 'Madhya Pradesh', lat: 22.7196, lng: 75.8577, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
   { id: 'jabalpur', name: 'Jabalpur', state: 'Madhya Pradesh', lat: 23.1815, lng: 79.9864, services: ['bike', 'auto'], active: true },
   { id: 'jaipur', name: 'Jaipur', state: 'Rajasthan', lat: 26.9124, lng: 75.7873, services: ['bike', 'auto', 'cab', 'e_rickshaw'], active: true },
