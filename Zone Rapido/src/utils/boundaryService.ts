@@ -14,9 +14,15 @@ export interface CityBoundary {
 const CACHE_KEY_PREFIX = 'captain_nexus_boundary_';
 
 export async function fetchCityBoundary(cityId: string, cityName: string, stateName: string): Promise<any> {
-  const cacheKey = `${CACHE_KEY_PREFIX}${cityName.toLowerCase().replace(/\s+/g, '_')}`;
+  const normalizedId = (cityId || cityName).toLowerCase().trim().replace(/[^a-z0-9]+/g, '_');
+  const cacheKey = `${CACHE_KEY_PREFIX}${normalizedId}`;
 
-  // 1. Check localStorage cache for high-res boundary
+  // 1. Check precomputed boundaries first for instant zero-latency accuracy
+  if (PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId]) {
+    return PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId];
+  }
+
+  // 2. Check localStorage cache for high-res boundary
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
@@ -29,11 +35,11 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
     // Local storage unavailable
   }
 
-  // 2. Query OpenStreetMap Nominatim for official boundary polygon
+  // 3. Query OpenStreetMap Nominatim for official boundary polygon
   const cleanName = cityName.split('(')[0].trim();
   const searchQueries = [
-    `${cleanName} District, ${stateName}, India`,
     `${cleanName} Municipal Corporation, ${stateName}, India`,
+    `${cleanName} District, ${stateName}, India`,
     `Greater ${cleanName}, ${stateName}, India`,
     `${cleanName}, ${stateName}, India`
   ];

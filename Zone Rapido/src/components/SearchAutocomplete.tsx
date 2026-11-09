@@ -13,17 +13,21 @@ export interface SuggestionItem {
 interface SearchAutocompleteProps {
   onSelectLocation: (loc: { name: string; lat: number; lng: number }) => void;
   isSearching: boolean;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
 export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   onSelectLocation,
-  isSearching
+  isSearching,
+  inputRef
 }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const internalInputRef = useRef<HTMLInputElement>(null);
+  const resolvedInputRef = inputRef || internalInputRef;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -135,8 +139,9 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     <div ref={containerRef} className="relative w-full">
       <div className="relative">
         <input
+          ref={resolvedInputRef}
           type="text"
-          placeholder="Search village, town, city or pincode..."
+          placeholder="Search village, town, city or pincode... (Ctrl+F)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim().length >= 2 && setIsOpen(true)}

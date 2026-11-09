@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
 import { fetchBulkRoadDistances, calculateHaversineDistance } from './utils/geo';
@@ -6,6 +6,7 @@ import { fetchCityBoundary, isPointInsideGeoJSON } from './utils/boundaryService
 import { MapView } from './components/MapView';
 import { SearchAutocomplete } from './components/SearchAutocomplete';
 import { AdBanner } from './components/AdBanner';
+import { GuideModal } from './components/GuideModal';
 
 const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
   { id: 'bike', label: 'Bike Taxi' },
@@ -18,6 +19,8 @@ const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
 
 export function App() {
   const [isInitialSplash, setIsInitialSplash] = useState(true);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'cities' | 'offices'>('cities');
   const [cities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
@@ -49,6 +52,25 @@ export function App() {
     }, 1200);
     return () => clearTimeout(timer);
   }, []);
+
+  // Global Keyboard Shortcuts (Ctrl+F for search, Esc to clear / dismiss)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
+      } else if (e.key === 'Escape') {
+        setIsGuideOpen(false);
+        if (selectedCity) setSelectedCity(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCity]);
 
   const handleSelectLocation = (loc: { name: string; lat: number; lng: number }) => {
     setIsSearching(true);
@@ -291,6 +313,15 @@ export function App() {
             {isDarkMode ? 'Light' : 'Dark'}
           </button>
 
+          {/* Guide / Tutorial ? Button */}
+          <button
+            onClick={() => setIsGuideOpen(true)}
+            title="User Guide & Tutorial (Press ?)"
+            className="w-7 h-7 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg shadow-amber-400/20 transition-all hover:scale-105"
+          >
+            ?
+          </button>
+
           {/* Map Layer Toggles */}
           <div className={`hidden xl:flex items-center space-x-1.5 px-2 py-1 rounded-xl border text-[11px] ${
             isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
@@ -336,6 +367,7 @@ export function App() {
           <div className={`p-4 border-b space-y-3 shrink-0 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
             {/* Google-Style Suggestive Autocomplete Search Bar */}
             <SearchAutocomplete
+              inputRef={searchInputRef}
               onSelectLocation={handleSelectLocation}
               isSearching={isSearching}
             />
@@ -638,6 +670,9 @@ export function App() {
           />
         </div>
       </div>
+
+      {/* Guide Tutorial Modal */}
+      <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </div>
   );
 }

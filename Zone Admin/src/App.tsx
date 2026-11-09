@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { auth } from './firebase';
 import { AdminLogin } from './components/AdminLogin';
+import { CityEditModal } from './components/CityEditModal';
+import { OfficePayloadModal } from './components/OfficePayloadModal';
 import { RAPIDO_OFFICIAL_CITIES, City } from '../../Zone Rapido/src/data/cities';
 import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../Zone Rapido/src/data/offices';
 
@@ -36,7 +38,27 @@ export default function AdminApp() {
   const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries'>('cities');
   const [cities, setCities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices, setOffices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
+  const [citySearchFilter, setCitySearchFilter] = useState('');
+  const [officeSearchFilter, setOfficeSearchFilter] = useState('');
+
+  // Modals
+  const [editingCity, setEditingCity] = useState<City | null>(null);
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
+  const [isPayloadModalOpen, setIsPayloadModalOpen] = useState(false);
+
+  // GeoJSON state
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [rawGeoJson, setRawGeoJson] = useState('');
+
+  // Quick form for new city
+  const [newCityName, setNewCityName] = useState('');
+  const [newCityState, setNewCityState] = useState('');
+  const [newCityLat, setNewCityLat] = useState('');
+  const [newCityLng, setNewCityLng] = useState('');
+
+  // Office inline edit
+  const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
+  const [landmarkNote, setLandmarkNote] = useState('');
 
   // Splash auto dismiss
   useEffect(() => {
@@ -75,17 +97,6 @@ export default function AdminApp() {
     return () => unsubscribe();
   }, []);
 
-  // New city form state
-  const [newCityName, setNewCityName] = useState('');
-  const [newCityState, setNewCityState] = useState('');
-  const [newCityLat, setNewCityLat] = useState('');
-  const [newCityLng, setNewCityLng] = useState('');
-  const [newCityNotes, setNewCityNotes] = useState('');
-
-  // Office edit state
-  const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
-  const [landmarkNote, setLandmarkNote] = useState('');
-
   const navigateToFleet = (fleet: FleetPlatform | null) => {
     setSelectedFleet(fleet);
     if (fleet) {
@@ -105,6 +116,12 @@ export default function AdminApp() {
     );
   };
 
+  const handleSaveCityEdit = (updatedCity: City) => {
+    setCities((prev) =>
+      prev.map((c) => (c.id === updatedCity.id ? updatedCity : c))
+    );
+  };
+
   const handleAddCity = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCityName || !newCityLat || !newCityLng) return;
@@ -116,15 +133,13 @@ export default function AdminApp() {
       lat: parseFloat(newCityLat),
       lng: parseFloat(newCityLng),
       services: ['bike', 'auto', 'cab', 'b2b'],
-      active: true,
-      notes: newCityNotes || undefined
+      active: true
     };
     setCities((prev) => [item, ...prev]);
     setNewCityName('');
     setNewCityState('');
     setNewCityLat('');
     setNewCityLng('');
-    setNewCityNotes('');
   };
 
   const handleSaveOfficeLandmark = (id: string) => {
@@ -133,6 +148,22 @@ export default function AdminApp() {
     );
     setEditingOfficeId(null);
   };
+
+  const handleImportOffices = (newOffices: CityOffice[]) => {
+    setOffices((prev) => [...newOffices, ...prev]);
+  };
+
+  // Filtered lists
+  const filteredCities = cities.filter((c) =>
+    c.name.toLowerCase().includes(citySearchFilter.toLowerCase()) ||
+    c.state.toLowerCase().includes(citySearchFilter.toLowerCase())
+  );
+
+  const filteredOffices = offices.filter((o) =>
+    o.name.toLowerCase().includes(officeSearchFilter.toLowerCase()) ||
+    o.city.toLowerCase().includes(officeSearchFilter.toLowerCase()) ||
+    o.state.toLowerCase().includes(officeSearchFilter.toLowerCase())
+  );
 
   if (isAuthLoading) {
     return (
@@ -206,7 +237,7 @@ export default function AdminApp() {
         </div>
       </header>
 
-      {/* MAIN VIEW AREA: Either Hub Fleet Cards (when selectedFleet is null) OR Platform Manager */}
+      {/* MAIN VIEW AREA: Hub Dashboard Cards OR High-Density Platform Manager */}
       {!selectedFleet ? (
         /* ================= 1. FLEET HUB DASHBOARD (CARDS VIEW) ================= */
         <main className="flex-1 overflow-y-auto p-8 max-w-6xl mx-auto w-full flex flex-col justify-center">
@@ -247,7 +278,7 @@ export default function AdminApp() {
 
               <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
                 <div className="text-[11px] text-slate-400 font-mono">
-                  <span>95 Cities • 35 Offices</span>
+                  <span>{cities.length} Cities • {offices.length} Offices</span>
                 </div>
                 <span className="inline-flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
                   Open Console &rarr;
@@ -299,7 +330,7 @@ export default function AdminApp() {
           </div>
         </main>
       ) : (
-        /* ================= 2. SPECIFIC PLATFORM MANAGEMENT CONSOLE ================= */
+        /* ================= 2. RAPIDO HIGH-DENSITY OPERATIONS CONSOLE ================= */
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Sub-header for Active Fleet Platform */}
           <div className="h-12 border-b border-slate-800 bg-slate-950 px-6 flex items-center justify-between shrink-0">
@@ -315,7 +346,10 @@ export default function AdminApp() {
               <div className="flex items-center space-x-2">
                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                 <span className="font-bold text-xs uppercase text-amber-400 tracking-wider">
-                  {selectedFleet} Control Plane
+                  {selectedFleet} Operations Console
+                </span>
+                <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+                  {cities.length} Cities | {offices.length} Offices
                 </span>
               </div>
             </div>
@@ -349,40 +383,80 @@ export default function AdminApp() {
             </div>
           </div>
 
-          {/* Tab 1: Manage Cities */}
+          {/* TAB 1: OPERATING CITIES (High Density Split-Pane with Search & In-Place Edit) */}
           {activeTab === 'cities' && (
             <div className="flex-1 flex overflow-hidden">
-              {/* City List */}
-              <div className="w-1/2 border-r border-slate-800 flex flex-col">
-                <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center text-xs">
-                  <span className="font-semibold text-slate-300">Active Coverage Directory ({cities.length})</span>
-                  <span className="text-[10px] text-slate-500 font-mono">Roppen Network</span>
+              {/* Left Column: Searchable Table / List of Cities */}
+              <div className="w-3/5 border-r border-slate-800 flex flex-col">
+                <div className="p-3 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Filter cities by name or state..."
+                      value={citySearchFilter}
+                      onChange={(e) => setCitySearchFilter(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    />
+                    {citySearchFilter && (
+                      <button
+                        onClick={() => setCitySearchFilter('')}
+                        className="absolute right-2.5 top-1.5 text-slate-500 hover:text-white text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono shrink-0">
+                    Showing {filteredCities.length} of {cities.length}
+                  </span>
                 </div>
-                <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60 p-2">
-                  {cities.map((city) => (
+
+                <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60 p-2 space-y-1">
+                  {filteredCities.map((city) => (
                     <div
                       key={city.id}
-                      className="p-3 hover:bg-slate-900 rounded-lg flex items-center justify-between transition-colors"
+                      className="p-2.5 hover:bg-slate-900/90 rounded-xl flex items-center justify-between transition-colors border border-transparent hover:border-slate-800"
                     >
                       <div>
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-xs text-white">{city.name}</span>
-                          <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-medium">
                             {city.state}
                           </span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            ({city.lat.toFixed(3)}, {city.lng.toFixed(3)})
+                          </span>
                         </div>
-                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                          {city.lat.toFixed(4)}, {city.lng.toFixed(4)}
-                        </p>
+                        <div className="flex items-center space-x-1.5 mt-1">
+                          {city.services.map((s) => (
+                            <span key={s} className="text-[9px] uppercase font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded">
+                              {s}
+                            </span>
+                          ))}
+                          {city.notes && (
+                            <span className="text-[10px] text-slate-400 italic">
+                              • {city.notes}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center space-x-2">
                         <button
+                          onClick={() => {
+                            setEditingCity(city);
+                            setIsCityModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
                           onClick={() => handleToggleCity(city.id)}
-                          className={`px-2 py-1 text-[11px] font-bold rounded ${
+                          className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${
                             city.active
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                              : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
                           }`}
                         >
                           {city.active ? 'Active' : 'Disabled'}
@@ -393,111 +467,137 @@ export default function AdminApp() {
                 </div>
               </div>
 
-              {/* Add New City Form */}
-              <div className="w-1/2 p-6 overflow-y-auto bg-slate-900/20">
-                <h3 className="font-bold text-sm text-amber-400 mb-2">Register New Operating City</h3>
-                <p className="text-xs text-slate-400 mb-6">
-                  Add a new municipal hub to Rapido's active operating network. Updates will reflect on rapido.taxi.silenvault.com.
-                </p>
-
-                <form onSubmit={handleAddCity} className="space-y-4 max-w-md">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">City Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Bhagalpur"
-                      value={newCityName}
-                      onChange={(e) => setNewCityName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                    />
+              {/* Right Column: Register City Form & Quick Metrics */}
+              <div className="w-2/5 p-6 overflow-y-auto bg-slate-900/30 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-sm text-amber-400">Register New Operating City</h3>
+                    <span className="text-[10px] bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded font-mono">
+                      Realtime Publish
+                    </span>
                   </div>
+                  <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                    Instantly expand Rapido's active directory. Newly registered cities automatically resolve routing and appear in the public portal.
+                  </p>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">State / Region</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Bihar"
-                      value={newCityState}
-                      onChange={(e) => setNewCityState(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
+                  <form onSubmit={handleAddCity} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Latitude</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">City Name</label>
                       <input
-                        type="number"
-                        step="any"
+                        type="text"
                         required
-                        placeholder="25.2425"
-                        value={newCityLat}
-                        onChange={(e) => setNewCityLat(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                        placeholder="e.g. Bhagalpur"
+                        value={newCityName}
+                        onChange={(e) => setNewCityName(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
                       />
                     </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Longitude</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">State / Province</label>
                       <input
-                        type="number"
-                        step="any"
+                        type="text"
                         required
-                        placeholder="86.9842"
-                        value={newCityLng}
-                        onChange={(e) => setNewCityLng(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                        placeholder="e.g. Bihar"
+                        value={newCityState}
+                        onChange={(e) => setNewCityState(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Internal Notes</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Pilot deployment phase"
-                      value={newCityNotes}
-                      onChange={(e) => setNewCityNotes(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                    />
-                  </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Latitude</label>
+                        <input
+                          type="number"
+                          step="any"
+                          required
+                          placeholder="25.2425"
+                          value={newCityLat}
+                          onChange={(e) => setNewCityLat(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Longitude</label>
+                        <input
+                          type="number"
+                          step="any"
+                          required
+                          placeholder="86.9842"
+                          value={newCityLng}
+                          onChange={(e) => setNewCityLng(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
 
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg text-xs transition-colors shadow-lg shadow-amber-400/20"
-                  >
-                    Add City to Rapido Network
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-xs transition-colors shadow-lg shadow-amber-400/20"
+                    >
+                      + Register City into Rapido Network
+                    </button>
+                  </form>
+                </div>
+
+                <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/80 mt-6">
+                  <div className="text-xs font-bold text-slate-300 mb-1">Data Safety Protocol</div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Edits made here update the authorized state immediately. Public users accessing rapido.taxi.silenvault.com receive updated servicing geometry on refresh.
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Tab 2: Manage Offices */}
+          {/* TAB 2: REGISTERED OFFICES (With Bulk Ingestion, Clipboard Paste, and File Upload) */}
           {activeTab === 'offices' && (
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
                 <div>
-                  <h3 className="font-bold text-sm text-blue-400">Roppen Transportation Statutory Offices ({offices.length})</h3>
-                  <p className="text-xs text-slate-400">Manage registered corporate and regional address landmarks.</p>
+                  <h3 className="font-bold text-base text-blue-400">
+                    Roppen Transportation Statutory Offices ({offices.length})
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Manage corporate headquarters, regional branches, and legal service addresses.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-3 w-full md:w-auto">
+                  <input
+                    type="text"
+                    placeholder="Search offices by name or city..."
+                    value={officeSearchFilter}
+                    onChange={(e) => setOfficeSearchFilter(e.target.value)}
+                    className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
+                  />
+                  <button
+                    onClick={() => setIsPayloadModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/20 flex items-center space-x-2 shrink-0 transition-all hover:scale-105"
+                  >
+                    <span>📋</span>
+                    <span>Bulk Upload / Paste Payload</span>
+                  </button>
                 </div>
               </div>
 
+              {/* Office Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {offices.map((office) => (
+                {filteredOffices.map((office) => (
                   <div
                     key={office.id}
-                    className="border border-slate-800 rounded-xl p-4 bg-slate-900/60 space-y-2 hover:border-slate-700 transition-colors"
+                    className="border border-slate-800 rounded-xl p-4 bg-slate-900/60 space-y-2 hover:border-slate-700 transition-colors flex flex-col justify-between"
                   >
-                    <div className="flex justify-between items-start">
-                      <span className="font-bold text-xs text-white">{office.name}</span>
-                      <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">
-                        {office.state}
-                      </span>
+                    <div>
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-xs text-white">{office.name}</span>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono">
+                          {office.state}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">{office.address}</p>
                     </div>
-
-                    <p className="text-[11px] text-slate-300 leading-relaxed">{office.address}</p>
 
                     {editingOfficeId === office.id ? (
                       <div className="pt-2 border-t border-slate-800 space-y-2">
@@ -525,7 +625,7 @@ export default function AdminApp() {
                       </div>
                     ) : (
                       <div className="flex justify-between items-center pt-2 border-t border-slate-800">
-                        <span className="text-xs text-cyan-400">
+                        <span className="text-xs text-cyan-400 truncate max-w-[200px]">
                           Landmark: {office.landmarkNote || 'None set'}
                         </span>
                         <button
@@ -533,7 +633,7 @@ export default function AdminApp() {
                             setEditingOfficeId(office.id);
                             setLandmarkNote(office.landmarkNote || '');
                           }}
-                          className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold"
+                          className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold shrink-0"
                         >
                           Edit Landmark
                         </button>
@@ -545,7 +645,7 @@ export default function AdminApp() {
             </div>
           )}
 
-          {/* Tab 3: GeoJSON Boundary Editor */}
+          {/* TAB 3: GEOJSON BOUNDARY EDITOR */}
           {activeTab === 'boundaries' && (
             <div className="flex-1 p-6 overflow-y-auto space-y-4">
               <h3 className="font-bold text-sm text-emerald-400">Custom Municipal Boundary & GeoJSON Editor</h3>
@@ -572,12 +672,18 @@ export default function AdminApp() {
                   <label className="block text-xs font-semibold text-slate-300">Raw GeoJSON Polygon</label>
                   <textarea
                     rows={10}
+                    value={rawGeoJson}
+                    onChange={(e) => setRawGeoJson(e.target.value)}
                     placeholder='{"type": "Polygon", "coordinates": [...]}'
                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs font-mono text-emerald-400 focus:outline-none"
                   />
 
                   <button
                     type="button"
+                    onClick={() => {
+                      if (!selectedCityId || !rawGeoJson) return;
+                      alert(`Updated municipal boundary for city [${selectedCityId}].`);
+                    }}
                     className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs shadow"
                   >
                     Update & Publish Boundary
@@ -592,6 +698,24 @@ export default function AdminApp() {
           )}
         </div>
       )}
+
+      {/* City Edit Drawer Modal */}
+      <CityEditModal
+        city={editingCity}
+        isOpen={isCityModalOpen}
+        onClose={() => {
+          setIsCityModalOpen(false);
+          setEditingCity(null);
+        }}
+        onSave={handleSaveCityEdit}
+      />
+
+      {/* Bulk Office Payload Modal */}
+      <OfficePayloadModal
+        isOpen={isPayloadModalOpen}
+        onClose={() => setIsPayloadModalOpen(false)}
+        onImport={handleImportOffices}
+      />
     </div>
   );
 }
