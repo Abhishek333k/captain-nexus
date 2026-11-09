@@ -119,7 +119,7 @@ export const MapView: React.FC<MapProps> = ({
   radiusKm,
   onSelectCity,
   onSelectOffice,
-  showSurgeHexagons = true,
+  showSurgeHexagons = false,
   showCityPins = true,
   showOfficePins = true,
   activeCityBoundary = null,

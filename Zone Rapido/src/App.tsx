@@ -40,7 +40,7 @@ export function App() {
   // Layer Visibility Controls
   const [showCityPins, setShowCityPins] = useState(true);
   const [showOfficePins, setShowOfficePins] = useState(false);
-  const [showSurgeHexagons, setShowSurgeHexagons] = useState(true);
+  const [showSurgeHexagons, setShowSurgeHexagons] = useState(false);
 
   // Splash screen auto dismiss
   useEffect(() => {
