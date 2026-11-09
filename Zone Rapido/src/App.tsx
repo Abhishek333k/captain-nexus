@@ -74,6 +74,10 @@ export function App() {
 
   const handleSelectLocation = (loc: { name: string; lat: number; lng: number }) => {
     setIsSearching(true);
+    // CRITICAL FIX: Reset previous explicit city selection and cached road distances
+    // so the new searched coordinates become the primary reference and trigger fresh routing!
+    setSelectedCity(null);
+    setRoadDistances({});
     setSearchedLocation(loc);
     setIsSearching(false);
   };

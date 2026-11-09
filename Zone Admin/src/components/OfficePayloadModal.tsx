@@ -1,145 +1,145 @@
-import React, { useState } from 'react';
-import { CityOffice } from '../../../Zone Rapido/src/data/offices';
+import React, { useState, useEffect } from 'react';
+
+interface StoredPayloadItem {
+  id: string;
+  timestamp: string;
+  title: string;
+  type: 'clipboard_text' | 'file_upload';
+  fileName?: string;
+  fileSize?: string;
+  content: string;
+}
+
+const STORAGE_KEY = 'silenvault_admin_dropbox_payloads';
 
 interface OfficePayloadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (newOffices: CityOffice[]) => void;
+  onImport?: (rawText: string) => void;
 }
 
 export const OfficePayloadModal: React.FC<OfficePayloadModalProps> = ({
   isOpen,
-  onClose,
-  onImport
+  onClose
 }) => {
-  const [activeMode, setActiveMode] = useState<'paste' | 'upload'>('paste');
-  const [pasteData, setPasteData] = useState('');
-  const [previewOffices, setPreviewOffices] = useState<CityOffice[]>([]);
+  const [activeTab, setActiveTab] = useState<'paste' | 'upload' | 'history'>('paste');
+  const [title, setTitle] = useState('');
+  const [textContent, setTextContent] = useState('');
+  const [storedPayloads, setStoredPayloads] = useState<StoredPayloadItem[]>([]);
+  const [selectedPayload, setSelectedPayload] = useState<StoredPayloadItem | null>(null);
+  const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [fileName, setFileName] = useState('');
+
+  // Load existing dropbox payload records
+  useEffect(() => {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) {
+        setStoredPayloads(JSON.parse(data));
+      }
+    } catch {
+      // Ignored
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // Parser for Spreadsheet (TSV, CSV, or Tab-separated copied from Google Sheets / Excel)
-  const parseDelimitedText = (text: string): CityOffice[] => {
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    if (lines.length === 0) return [];
-
-    const parsed: CityOffice[] = [];
-
-    lines.forEach((line, index) => {
-      // Skip header if line matches common headers
-      if (index === 0 && (line.toLowerCase().includes('name') || line.toLowerCase().includes('address'))) {
-        return;
-      }
-
-      // Detect delimiter: tab or comma
-      const delimiter = line.includes('\t') ? '\t' : ',';
-      const cols = line.split(delimiter).map((c) => c.replace(/^["']|["']$/g, '').trim());
-
-      if (cols.length >= 3) {
-        // Expected format: Name, City, State, Address, Lat (opt), Lng (opt), Landmark (opt)
-        const name = cols[0] || 'Regional Office';
-        const city = cols[1] || 'India';
-        const state = cols[2] || 'India';
-        const address = cols[3] || `${name}, ${city}, ${state}`;
-        const lat = parseFloat(cols[4]) || 20.5937;
-        const lng = parseFloat(cols[5]) || 78.9629;
-        const landmarkNote = cols[6] || undefined;
-        const id = `office_${city.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}_${index}`;
-
-        parsed.push({
-          id,
-          name,
-          legalEntity: 'Roppen Transportation Services Private Limited',
-          cin: 'U52210TG2015PTC097115',
-          city,
-          state,
-          address,
-          type: 'registered_office',
-          pincode: 'India',
-          timing: '10:00 AM - 6:00 PM',
-          statutorySource: 'Ministry of Corporate Affairs (MCA) Public Records',
-          lat,
-          lng,
-          landmarkNote
-        });
-      }
-    });
-
-    return parsed;
+  const savePayloads = (newList: StoredPayloadItem[]) => {
+    setStoredPayloads(newList);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
   };
 
-  const handleParseClipboard = () => {
+  const handleSaveClipboard = () => {
     setErrorMsg('');
-    try {
-      const result = parseDelimitedText(pasteData);
-      if (result.length === 0) {
-        setErrorMsg('Could not detect valid rows. Expected columns: [Name, City, State, Address, Lat, Lng, Landmark]');
-        return;
-      }
-      setPreviewOffices(result);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error parsing tabular data.');
+    setSuccessMsg('');
+    if (!textContent.trim()) {
+      setErrorMsg('Please paste your spreadsheet, table, or address data first.');
+      return;
     }
+
+    const item: StoredPayloadItem = {
+      id: `payload_${Date.now()}`,
+      timestamp: new Date().toLocaleString(),
+      title: title.trim() || `Raw Sheet Ingestion (${new Date().toLocaleDateString()})`,
+      type: 'clipboard_text',
+      content: textContent
+    };
+
+    const updated = [item, ...storedPayloads];
+    savePayloads(updated);
+    setSuccessMsg('Successfully dropped payload into storage vault! Ready for review.');
+    setTextContent('');
+    setTitle('');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMsg('');
+    setSuccessMsg('');
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setFileName(file.name);
     const reader = new FileReader();
-
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (!content) return;
 
-      if (file.name.endsWith('.json')) {
-        try {
-          const json = JSON.parse(content);
-          if (Array.isArray(json)) {
-            setPreviewOffices(json);
-            return;
-          }
-        } catch {
-          setErrorMsg('Invalid JSON format.');
-          return;
-        }
-      }
+      const sizeStr = `${(file.size / 1024).toFixed(1)} KB`;
+      const item: StoredPayloadItem = {
+        id: `payload_${Date.now()}`,
+        timestamp: new Date().toLocaleString(),
+        title: title.trim() || file.name,
+        type: 'file_upload',
+        fileName: file.name,
+        fileSize: sizeStr,
+        content
+      };
 
-      // Default CSV/TSV
-      const result = parseDelimitedText(content);
-      if (result.length === 0) {
-        setErrorMsg('No valid rows found in file.');
-        return;
-      }
-      setPreviewOffices(result);
+      const updated = [item, ...storedPayloads];
+      savePayloads(updated);
+      setSuccessMsg(`File [${file.name}] successfully saved in the dropbox vault.`);
+      setTitle('');
     };
 
     reader.readAsText(file);
   };
 
-  const handleFinalImport = () => {
-    if (previewOffices.length === 0) return;
-    onImport(previewOffices);
-    onClose();
+  const handleDelete = (id: string) => {
+    const filtered = storedPayloads.filter((p) => p.id !== id);
+    savePayloads(filtered);
+    if (selectedPayload?.id === id) {
+      setSelectedPayload(null);
+    }
+  };
+
+  const handleCopyContent = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert('Payload content copied to clipboard.');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in select-none">
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden p-6 text-slate-100 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in select-none">
+      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden p-6 text-slate-100 flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-blue-400 bg-blue-400/10 border border-blue-400/20 px-2 py-0.5 rounded">
-              Bulk Statutory Office Ingestion
-            </span>
-            <h2 className="text-base font-bold text-white mt-1">
-              Spreadsheet Clipboard Paste & File Ingestion
-            </h2>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl border border-blue-500/30">
+              📦
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="text-base font-bold text-white tracking-wide">
+                  OPERATIONS DROPBOX VAULT
+                </span>
+                <span className="text-[10px] uppercase font-bold text-blue-400 bg-blue-400/10 border border-blue-400/20 px-2 py-0.5 rounded">
+                  Raw Staging
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Safe storage for full raw sheets, legal address records, and files without premature parsing.
+              </p>
+            </div>
           </div>
+
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm font-bold"
@@ -148,138 +148,232 @@ export const OfficePayloadModal: React.FC<OfficePayloadModalProps> = ({
           </button>
         </div>
 
-        {/* Mode Switcher */}
-        <div className="flex space-x-2 my-4 shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveMode('paste')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeMode === 'paste'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
-            }`}
-          >
-            📋 Clipboard / Sheet Paste
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveMode('upload')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeMode === 'upload'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
-            }`}
-          >
-            📁 File Upload (.csv, .tsv, .json)
-          </button>
+        {/* Tab Controls */}
+        <div className="flex items-center justify-between my-4 shrink-0">
+          <div className="flex space-x-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('paste')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'paste'
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              📋 Paste Sheet Data
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('upload')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'upload'
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              📁 File Dropbox
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('history')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                activeTab === 'history'
+                  ? 'bg-amber-400 text-slate-950 shadow'
+                  : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              <span>🗄️ Staged Payloads</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300">
+                {storedPayloads.length}
+              </span>
+            </button>
+          </div>
         </div>
 
+        {/* Status Alerts */}
         {errorMsg && (
           <div className="mb-3 p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs shrink-0">
             {errorMsg}
           </div>
         )}
+        {successMsg && (
+          <div className="mb-3 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs shrink-0">
+            {successMsg}
+          </div>
+        )}
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {activeMode === 'paste' ? (
-            <div className="space-y-3">
-              <label className="block text-xs text-slate-400 leading-relaxed">
-                Copy and paste rows directly from Google Sheets or Excel. 
-                <span className="block text-[11px] text-slate-500 font-mono mt-0.5">
-                  Columns: [Name] | [City] | [State] | [Address] | [Lat] | [Lng] | [Landmark Note]
-                </span>
+        {/* Tab 1: Clipboard Sheet Paste */}
+        {activeTab === 'paste' && (
+          <div className="flex-1 overflow-y-auto space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Payload Label / Description
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Roppen Transportation Statutory Offices - Bihar & UP Batch"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Raw Sheet Content (Ctrl+V directly from Excel or Google Sheets)
               </label>
               <textarea
-                rows={6}
-                value={pasteData}
-                onChange={(e) => setPasteData(e.target.value)}
-                placeholder="Roppen Transportation Office	Patna	Bihar	Fraser Road, Patna	25.6101	85.1415	Near Dak Bunglow"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs font-mono text-cyan-300 focus:outline-none focus:border-blue-500"
+                rows={10}
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                placeholder="Paste whole copied columns or text here directly..."
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs font-mono text-cyan-300 focus:outline-none focus:border-blue-500 leading-relaxed"
               />
-              <button
-                type="button"
-                onClick={handleParseClipboard}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-colors"
-              >
-                Parse & Generate Preview
-              </button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <label className="block text-xs text-slate-400">
-                Upload `.csv`, `.tsv`, or `.json` file containing statutory office locations.
-              </label>
-              <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl cursor-pointer bg-slate-950 transition-colors">
-                <span className="text-3xl mb-2">📥</span>
-                <span className="text-xs font-bold text-white mb-1">
-                  {fileName ? fileName : 'Choose File or Drop Here'}
-                </span>
-                <span className="text-[11px] text-slate-500 font-mono">Supports CSV, TSV, JSON</span>
-                <input
-                  type="file"
-                  accept=".csv,.tsv,.txt,.json"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
-          )}
 
-          {/* Parsed Preview Table */}
-          {previewOffices.length > 0 && (
-            <div className="space-y-2 pt-4 border-t border-slate-800">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400">
-                  Detected {previewOffices.length} Office Records Ready For Ingestion
-                </span>
-                <span className="text-[10px] text-slate-500 font-mono">Live Validation Passed</span>
-              </div>
-
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 divide-y divide-slate-800/80">
-                {previewOffices.map((o, idx) => (
-                  <div key={idx} className="p-2.5 text-xs flex justify-between items-center">
-                    <div>
-                      <div className="font-bold text-white">{o.name}</div>
-                      <div className="text-[11px] text-slate-400">{o.address}</div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono">
-                        {o.city}, {o.state}
-                      </span>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        {o.lat}, {o.lng}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-between items-center pt-4 border-t border-slate-800 shrink-0 mt-4">
-          <span className="text-xs text-slate-500 font-mono">
-            {previewOffices.length > 0 ? `${previewOffices.length} records staged` : 'Awaiting input'}
-          </span>
-          <div className="flex space-x-2">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+              onClick={handleSaveClipboard}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-colors shadow-lg shadow-blue-600/20"
             >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleFinalImport}
-              disabled={previewOffices.length === 0}
-              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-bold shadow-lg shadow-blue-600/20"
-            >
-              Import {previewOffices.length} Records to Directory
+              📥 Save Raw Payload to Dropbox
             </button>
           </div>
+        )}
+
+        {/* Tab 2: File Upload */}
+        {activeTab === 'upload' && (
+          <div className="flex-1 overflow-y-auto space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Optional Custom Note / Label
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. November statutory office addresses export"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <label className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl cursor-pointer bg-slate-950 transition-colors">
+              <span className="text-4xl mb-3">📁</span>
+              <span className="text-sm font-bold text-white mb-1">
+                Upload Raw File into Vault
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                Accepts .csv, .tsv, .xlsx exports, .txt, .json
+              </span>
+              <input
+                type="file"
+                accept=".csv,.tsv,.txt,.json,.xlsx"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+        )}
+
+        {/* Tab 3: Staged Payloads List & Inspector */}
+        {activeTab === 'history' && (
+          <div className="flex-1 flex overflow-hidden border border-slate-800 rounded-xl">
+            {/* List */}
+            <div className="w-1/2 border-r border-slate-800 flex flex-col bg-slate-950">
+              <div className="p-3 border-b border-slate-800 text-xs font-semibold text-slate-300 flex justify-between">
+                <span>Stored Staged Records ({storedPayloads.length})</span>
+                <span className="text-[10px] text-slate-500 font-mono">Persistent</span>
+              </div>
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60 p-1">
+                {storedPayloads.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500">
+                    No payloads staged yet. Paste or upload data from the tabs above.
+                  </div>
+                ) : (
+                  storedPayloads.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedPayload(item)}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                        selectedPayload?.id === item.id
+                          ? 'bg-blue-600/20 border border-blue-500/40'
+                          : 'hover:bg-slate-900 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-xs text-white truncate max-w-[200px]">
+                          {item.title}
+                        </span>
+                        <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded font-mono">
+                          {item.type === 'file_upload' ? 'File' : 'Text'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                        <span>{item.timestamp}</span>
+                        {item.fileSize && <span>{item.fileSize}</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Viewer */}
+            <div className="w-1/2 p-4 flex flex-col justify-between bg-slate-900/40">
+              {selectedPayload ? (
+                <>
+                  <div className="space-y-2 flex-1 overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                      <div>
+                        <div className="font-bold text-xs text-white">{selectedPayload.title}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          {selectedPayload.timestamp} {selectedPayload.fileName ? `• ${selectedPayload.fileName}` : ''}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDelete(selectedPayload.id)}
+                        className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+
+                    <textarea
+                      readOnly
+                      rows={14}
+                      value={selectedPayload.content}
+                      className="w-full flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-[11px] font-mono text-cyan-300 focus:outline-none resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800 flex justify-end space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyContent(selectedPayload.content)}
+                      className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold"
+                    >
+                      Copy Raw
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="h-full flex items-center justify-center text-xs text-slate-500">
+                  Select a payload to view or copy raw contents.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex justify-end pt-4 border-t border-slate-800 shrink-0 mt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+          >
+            Close Vault
+          </button>
         </div>
       </div>
     </div>

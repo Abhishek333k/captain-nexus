@@ -149,10 +149,6 @@ export default function AdminApp() {
     setEditingOfficeId(null);
   };
 
-  const handleImportOffices = (newOffices: CityOffice[]) => {
-    setOffices((prev) => [...newOffices, ...prev]);
-  };
-
   // Filtered lists
   const filteredCities = cities.filter((c) =>
     c.name.toLowerCase().includes(citySearchFilter.toLowerCase()) ||
@@ -714,7 +710,6 @@ export default function AdminApp() {
       <OfficePayloadModal
         isOpen={isPayloadModalOpen}
         onClose={() => setIsPayloadModalOpen(false)}
-        onImport={handleImportOffices}
       />
     </div>
   );

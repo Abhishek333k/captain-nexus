@@ -93,20 +93,22 @@ function MapViewController({
   const map = useMap();
 
   useEffect(() => {
-    // If the user specifically clicked a city, prioritize focusing that city!
-    // Otherwise fallback to the searched reference location.
+    // If the user selected an explicit city, prioritize that.
+    // Otherwise focus on the searched location center!
     const center = selectedCityCenter || searchCenter;
     if (!center) return;
-    const effectiveRadius = selectedCityCenter ? 25 : radiusKm;
+
+    // Use a tighter focus for single city click, or radius coverage for search location
+    const effectiveRadius = selectedCityCenter ? 25 : Math.max(radiusKm, 30);
     const latDelta = (effectiveRadius * 1.3) / 110.574;
     const lngDelta = (effectiveRadius * 1.3) / (111.32 * Math.cos((center[0] * Math.PI) / 180));
     const southWest: [number, number] = [center[0] - latDelta, center[1] - lngDelta];
     const northEast: [number, number] = [center[0] + latDelta, center[1] + lngDelta];
 
     try {
-      map.fitBounds([southWest, northEast], { padding: [40, 40], maxZoom: 12, animate: true });
+      map.flyToBounds([southWest, northEast], { padding: [40, 40], maxZoom: 12, duration: 1.2 });
     } catch {
-      map.setView(center, 11);
+      map.flyTo(center, 11, { duration: 1.2 });
     }
   }, [selectedCityCenter, searchCenter, radiusKm, map]);
 
