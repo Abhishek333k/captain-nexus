@@ -259,7 +259,10 @@ export function App() {
         {/* Tab & Feature Controls */}
         <div className="flex items-center space-x-2">
           {/* Main List Mode */}
-          <div className={`flex p-1 rounded-xl border ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+          <div
+            id="tour-offices-tab"
+            className={`flex p-1 rounded-xl border ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}
+          >
             <button
               onClick={() => {
                 setActiveTab('cities');
@@ -327,9 +330,12 @@ export function App() {
           </button>
 
           {/* Map Layer Toggles */}
-          <div className={`hidden xl:flex items-center space-x-1.5 px-2 py-1 rounded-xl border text-[11px] ${
-            isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
-          }`}>
+          <div
+            id="tour-map-controls"
+            className={`hidden xl:flex items-center space-x-1.5 px-2 py-1 rounded-xl border text-[11px] ${
+              isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'
+            }`}
+          >
             <button
               onClick={() => setShowCityPins((prev) => !prev)}
               className={`px-2 py-0.5 rounded font-medium transition-colors ${
@@ -370,11 +376,13 @@ export function App() {
         >
           <div className={`p-4 border-b space-y-3 shrink-0 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
             {/* Google-Style Suggestive Autocomplete Search Bar */}
-            <SearchAutocomplete
-              inputRef={searchInputRef}
-              onSelectLocation={handleSelectLocation}
-              isSearching={isSearching}
-            />
+            <div id="tour-search-container">
+              <SearchAutocomplete
+                inputRef={searchInputRef}
+                onSelectLocation={handleSelectLocation}
+                isSearching={isSearching}
+              />
+            </div>
 
             {/* Dynamic Commute Radius Slider */}
             <div>
@@ -399,7 +407,7 @@ export function App() {
 
             {/* Service Filter Matrix (Active in Cities tab) */}
             {activeTab === 'cities' && (
-              <div>
+              <div id="tour-service-filters">
                 <span className={`block text-[11px] font-semibold mb-1.5 uppercase tracking-wider ${
                   isDarkMode ? 'text-slate-400' : 'text-slate-500'
                 }`}>
@@ -486,7 +494,7 @@ export function App() {
 
           {/* Tab 1: Active Cities List */}
           {activeTab === 'cities' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            <div id="tour-city-list" className="flex-1 overflow-y-auto p-4 space-y-2.5">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
                 <span>Rapido Live Cities ({rankedCities.length})</span>
                 <span>Road Transportation Distance</span>

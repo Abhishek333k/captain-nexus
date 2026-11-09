@@ -1,140 +1,283 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-interface GuideStep {
+export interface TourStep {
+  id: string;
+  targetId: string; // DOM element ID to focus and spotlight
   title: string;
-  badge: string;
+  stepNumber: number;
+  totalSteps: number;
   description: string;
   tip: string;
   icon: string;
+  placement: 'bottom' | 'top' | 'right' | 'left' | 'center';
+  actionHint?: string;
 }
 
-const GUIDE_STEPS: GuideStep[] = [
+const TOUR_STEPS: TourStep[] = [
   {
-    title: 'Instant City & Commute Search',
-    badge: 'Step 1 of 5',
-    description: 'Press Ctrl + F (or tap the search bar) to look up any village, town, district, or pincode across India.',
-    tip: 'Zero-latency distance ranking calculates road distance via OSRM immediately.',
-    icon: '🔍'
+    id: 'step-search',
+    targetId: 'tour-search-container',
+    title: 'City & Location Search',
+    stepNumber: 1,
+    totalSteps: 5,
+    description: 'Type any village, town, or pincode here. Instant zero-latency Haversine sorting ranks closest operational hubs while road routes calculate.',
+    tip: 'Shortcut: Press Ctrl + F (or Cmd + F) anytime to jump directly to this search bar.',
+    icon: '🔍',
+    placement: 'bottom',
+    actionHint: 'Try typing a city or pincode'
   },
   {
-    title: 'Service Fleet Filtering',
-    badge: 'Step 2 of 5',
-    description: 'Filter active cities by category: Bike Taxi, Auto, Cab, E-Rickshaw, Tuk-Tuk, or B2B Delivery.',
-    tip: 'Click any chip in the filter bar to immediately isolate supported locations.',
-    icon: '🛵'
+    id: 'step-service',
+    targetId: 'tour-service-filters',
+    title: 'Service Category Filter',
+    stepNumber: 2,
+    totalSteps: 5,
+    description: 'Isolate active locations by vehicle and service category: Bike Taxi, Auto, Cab, E-Rickshaw, Tuk-Tuk, or B2B Delivery.',
+    tip: 'Click any category chip to narrow down the active coverage directory.',
+    icon: '🛵',
+    placement: 'bottom'
   },
   {
-    title: 'Interactive City Boundaries',
-    badge: 'Step 3 of 5',
-    description: 'Click on any city in the list or map. The system immediately zooms in and renders the official municipal boundary.',
-    tip: 'The live badge will tell you if your searched location is strictly inside or outside.',
-    icon: '🗺️'
+    id: 'step-cities',
+    targetId: 'tour-city-list',
+    title: 'Active Servicing Cities',
+    stepNumber: 3,
+    totalSteps: 5,
+    description: 'Lists all verified operational cities with exact road distances. Selecting any city automatically flies the map and highlights its municipal boundary polygon.',
+    tip: 'Clicking any city card focuses the map directly on that city.',
+    icon: '🗺️',
+    placement: 'right'
   },
   {
-    title: 'Registered Statutory Offices',
-    badge: 'Step 4 of 5',
-    description: 'Switch to the "Registered Offices" tab to view Roppen Transportation statutory corporate and regional offices.',
-    tip: 'Check landmarks and direct legal address records across each state.',
-    icon: '🏛️'
+    id: 'step-offices',
+    targetId: 'tour-offices-tab',
+    title: 'Statutory Registered Offices',
+    stepNumber: 4,
+    totalSteps: 5,
+    description: 'Switch between active cities and Roppen Transportation statutory registered offices across Indian states.',
+    tip: 'Includes legal corporate addresses and executive landmark guides.',
+    icon: '🏛️',
+    placement: 'bottom'
   },
   {
-    title: 'Keyboard Shortcuts & Map Toggles',
-    badge: 'Step 5 of 5',
-    description: 'Use Ctrl + F to search, Esc to clear, and toggle Cities, Offices, or Hexagons directly from the top header.',
-    tip: 'You can reopen this tutorial anytime by tapping the (?) help icon.',
-    icon: '⚡'
+    id: 'step-controls',
+    targetId: 'tour-map-controls',
+    title: 'Layer Toggles & Keyboard Shortcuts',
+    stepNumber: 5,
+    totalSteps: 5,
+    description: 'Toggle City markers, Office pins, and Surge hexagons on or off. Use Esc to clear selections and Ctrl+F to search.',
+    tip: 'Click the (?) button at any time to replay this interactive walkthrough.',
+    icon: '⚡',
+    placement: 'bottom'
   }
 ];
 
 interface GuideModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelectTab?: (tab: 'cities' | 'offices') => void;
 }
 
-export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+export const GuideModal: React.FC<GuideModalProps> = ({
+  isOpen,
+  onClose,
+  onSelectTab
+}) => {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  const step = TOUR_STEPS[currentStepIndex];
+
+  // Calculate target element bounding rectangle whenever step changes
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (step.id === 'step-offices' && onSelectTab) {
+      // Auto-preview tabs if needed
+    }
+
+    const updatePosition = () => {
+      const el = document.getElementById(step.targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const rect = el.getBoundingClientRect();
+        setTargetRect(rect);
+      } else {
+        setTargetRect(null);
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, currentStepIndex, step.targetId, step.id, onSelectTab]);
 
   if (!isOpen) return null;
 
-  const step = GUIDE_STEPS[currentStep];
-
   const handleNext = () => {
-    if (currentStep < GUIDE_STEPS.length - 1) {
-      setCurrentStep((prev) => prev + 1);
+    if (currentStepIndex < TOUR_STEPS.length - 1) {
+      setCurrentStepIndex((prev) => prev + 1);
     } else {
       onClose();
-      setCurrentStep(0);
+      setCurrentStepIndex(0);
     }
   };
 
   const handlePrev = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex((prev) => prev - 1);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden p-6 text-slate-100">
-        {/* Glow accent */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+  // Compute tooltip popover coordinates anchored to target element
+  const getPopoverStyle = (): React.CSSProperties => {
+    if (!targetRect) {
+      return {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        position: 'fixed'
+      };
+    }
 
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+    const pad = 12;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const popoverWidth = 380;
+    const popoverHeight = 260;
+
+    let top = 0;
+    let left = 0;
+
+    if (step.placement === 'bottom') {
+      top = targetRect.bottom + pad;
+      left = targetRect.left + targetRect.width / 2 - popoverWidth / 2;
+    } else if (step.placement === 'top') {
+      top = targetRect.top - popoverHeight - pad;
+      left = targetRect.left + targetRect.width / 2 - popoverWidth / 2;
+    } else if (step.placement === 'right') {
+      top = targetRect.top + 20;
+      left = targetRect.right + pad;
+    } else if (step.placement === 'left') {
+      top = targetRect.top + 20;
+      left = targetRect.left - popoverWidth - pad;
+    }
+
+    // Viewport bounds constraint
+    if (left + popoverWidth > windowWidth - 16) {
+      left = windowWidth - popoverWidth - 16;
+    }
+    if (left < 16) {
+      left = 16;
+    }
+    if (top + popoverHeight > windowHeight - 16) {
+      top = windowHeight - popoverHeight - 16;
+    }
+    if (top < 16) {
+      top = 16;
+    }
+
+    return {
+      top: `${top}px`,
+      left: `${left}px`,
+      position: 'fixed'
+    };
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] overflow-hidden select-none pointer-events-auto">
+      {/* 1. Backdrop with Dark Overlay */}
+      <div 
+        onClick={onClose}
+        className="fixed inset-0 bg-slate-950/75 transition-opacity duration-300"
+      />
+
+      {/* 2. Spotlight Cutout / Glow Ring around Target Element */}
+      {targetRect && (
+        <div
+          style={{
+            top: targetRect.top - 6,
+            left: targetRect.left - 6,
+            width: targetRect.width + 12,
+            height: targetRect.height + 12
+          }}
+          className="fixed rounded-2xl border-2 border-amber-400 bg-amber-400/10 pointer-events-none transition-all duration-300 shadow-[0_0_35px_rgba(251,191,36,0.45)] ring-4 ring-amber-400/20 animate-pulse"
+        />
+      )}
+
+      {/* 3. Gaming-Style Focused Tooltip Popover */}
+      <div
+        ref={popoverRef}
+        style={getPopoverStyle()}
+        className="z-10 w-[380px] max-w-[92vw] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl p-5 text-slate-100 transition-all duration-300 backdrop-blur-md"
+      >
+        {/* Step Badge & Close */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div className="flex items-center space-x-2">
-            <span className="text-2xl">{step.icon}</span>
+            <span className="text-xl">{step.icon}</span>
             <div>
-              <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded">
-                {step.badge}
+              <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2 py-0.5 rounded font-mono">
+                Step {step.stepNumber} of {step.totalSteps}
               </span>
-              <h2 className="text-base font-bold text-white mt-1">{step.title}</h2>
+              <h3 className="text-sm font-bold text-white mt-0.5">{step.title}</h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors text-sm font-bold"
+            className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors text-xs font-bold"
           >
             ✕
           </button>
         </div>
 
-        {/* Content */}
-        <div className="py-6 space-y-4">
-          <p className="text-sm text-slate-300 leading-relaxed">{step.description}</p>
-          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-2">
+        {/* Description & Tip */}
+        <div className="py-3 space-y-2.5">
+          <p className="text-xs text-slate-300 leading-relaxed font-sans">
+            {step.description}
+          </p>
+
+          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-2">
             <span className="text-amber-400 text-xs">💡</span>
-            <p className="text-xs text-slate-400 leading-relaxed font-mono">{step.tip}</p>
+            <p className="text-[11px] text-slate-400 leading-normal font-mono">
+              {step.tip}
+            </p>
           </div>
         </div>
 
-        {/* Stepper Dots & Navigation */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-          <div className="flex space-x-1.5">
-            {GUIDE_STEPS.map((_, idx) => (
+        {/* Stepper Dots & Action Controls */}
+        <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+          <div className="flex space-x-1">
+            {TOUR_STEPS.map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => setCurrentStep(idx)}
+                onClick={() => setCurrentStepIndex(idx)}
                 className={`h-1.5 rounded-full transition-all ${
-                  currentStep === idx ? 'w-6 bg-amber-400' : 'w-2 bg-slate-700 hover:bg-slate-600'
+                  currentStepIndex === idx ? 'w-5 bg-amber-400' : 'w-1.5 bg-slate-700 hover:bg-slate-500'
                 }`}
               />
             ))}
           </div>
 
           <div className="flex items-center space-x-2">
-            {currentStep > 0 && (
+            {currentStepIndex > 0 && (
               <button
                 onClick={handlePrev}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                className="px-2.5 py-1 rounded-lg border border-slate-700 text-[11px] font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
               >
                 Back
               </button>
             )}
             <button
               onClick={handleNext}
-              className="px-4 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition-colors shadow-lg shadow-amber-400/20"
+              className="px-3.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-400/20"
             >
-              {currentStep === GUIDE_STEPS.length - 1 ? 'Get Started' : 'Next →'}
+              {currentStepIndex === TOUR_STEPS.length - 1 ? 'Finish Tour' : 'Next →'}
             </button>
           </div>
         </div>
@@ -142,4 +285,3 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
-
