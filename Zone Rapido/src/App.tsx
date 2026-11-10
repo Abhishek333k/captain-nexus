@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
 import { fetchBulkRoadDistances, calculateHaversineDistance } from './utils/geo';
@@ -22,7 +24,52 @@ export function App() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'cities' | 'offices'>('cities');
-  const [cities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
+  const [cities, setCities] = useState<City[]>(() => {
+    try {
+      const local = localStorage.getItem('silenvault_rapido_cities_cache');
+      if (local) {
+        const parsed = JSON.parse(local) as City[];
+        const map = new Map<string, City>();
+        RAPIDO_OFFICIAL_CITIES.forEach((c) => map.set(c.id, { ...c }));
+        parsed.forEach((c) => {
+          const existing = map.get(c.id);
+          map.set(c.id, existing ? { ...existing, ...c } : c);
+        });
+        return Array.from(map.values());
+      }
+    } catch {}
+    return RAPIDO_OFFICIAL_CITIES;
+  });
+
+  // Sync latest city updates & newly registered cities from Firestore
+  useEffect(() => {
+    let isSubscribed = true;
+    const syncCities = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'cities'));
+        if (!snap.empty && isSubscribed) {
+          const map = new Map<string, City>();
+          RAPIDO_OFFICIAL_CITIES.forEach((c) => map.set(c.id, { ...c }));
+          snap.forEach((docSnap) => {
+            const data = docSnap.data() as City;
+            const existing = map.get(docSnap.id);
+            map.set(docSnap.id, existing ? { ...existing, ...data, id: docSnap.id } : { ...data, id: docSnap.id });
+          });
+          const merged = Array.from(map.values());
+          setCities(merged);
+          try {
+            localStorage.setItem('silenvault_rapido_cities_cache', JSON.stringify(merged));
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('Realtime cities sync fallback to static:', err);
+      }
+    };
+    syncCities();
+    return () => {
+      isSubscribed = false;
+    };
+  }, []);
   const [offices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
   const [radiusKm, setRadiusKm] = useState<number>(30); // 30km standard limit
   const [selectedService, setSelectedService] = useState<ServiceType | 'all'>('all');
@@ -534,6 +581,28 @@ export function App() {
                           <p className="text-[11px] text-amber-500/90 mt-1 leading-snug">
                             Note: {city.notes}
                           </p>
+                        )}
+
+                        {city.address && (
+                          <div className={`mt-2 p-2 rounded-lg border text-xs leading-relaxed ${
+                            isDarkMode 
+                              ? 'bg-slate-900/90 border-slate-800 text-slate-300' 
+                              : 'bg-slate-100/90 border-slate-200 text-slate-700'
+                          }`}>
+                            <div className="font-bold flex items-center space-x-1.5 text-[11px] text-amber-400">
+                              <span>🏢</span>
+                              <span>City Office:</span>
+                            </div>
+                            <p className="mt-0.5 text-[11px] leading-snug">{city.address}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px]">
+                              {city.pincode && (
+                                <span className="font-mono text-slate-400">PIN: {city.pincode}</span>
+                              )}
+                              {city.landmarkNote && (
+                                <span className="text-amber-500/90 italic">📍 {city.landmarkNote}</span>
+                              )}
+                            </div>
+                          </div>
                         )}
 
                         <div className="flex flex-wrap gap-1 mt-2">

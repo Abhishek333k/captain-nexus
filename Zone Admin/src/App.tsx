@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { auth } from './firebase';
+import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import { AdminLogin } from './components/AdminLogin';
 import { CityEditModal } from './components/CityEditModal';
 import { OfficePayloadModal } from './components/OfficePayloadModal';
 import { RAPIDO_OFFICIAL_CITIES, City } from '../../Zone Rapido/src/data/cities';
 import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../Zone Rapido/src/data/offices';
+
+const CITIES_STORAGE_KEY = 'silenvault_admin_cities_override';
 
 const AUTHORIZED_ADMIN_EMAILS = [
   'mabhishekramesh1@gmail.com'
@@ -55,6 +58,9 @@ export default function AdminApp() {
   const [newCityState, setNewCityState] = useState('');
   const [newCityLat, setNewCityLat] = useState('');
   const [newCityLng, setNewCityLng] = useState('');
+  const [newCityAddress, setNewCityAddress] = useState('');
+  const [newCityLandmark, setNewCityLandmark] = useState('');
+  const [newCityPincode, setNewCityPincode] = useState('');
 
   // Office inline edit
   const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
@@ -110,22 +116,94 @@ export default function AdminApp() {
     await signOut(auth);
   };
 
-  const handleToggleCity = (id: string) => {
-    setCities((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c))
-    );
+  // Load and merge cities from Firestore & LocalStorage
+  useEffect(() => {
+    const loadCities = async () => {
+      const mergedMap = new Map<string, City>();
+      // 1. Official default cities
+      RAPIDO_OFFICIAL_CITIES.forEach((c) => mergedMap.set(c.id, { ...c }));
+
+      // 2. LocalStorage offline cache
+      try {
+        const local = localStorage.getItem(CITIES_STORAGE_KEY);
+        if (local) {
+          const parsed = JSON.parse(local) as City[];
+          parsed.forEach((c) => {
+            const existing = mergedMap.get(c.id);
+            mergedMap.set(c.id, existing ? { ...existing, ...c } : c);
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to parse local cities cache:', err);
+      }
+
+      // 3. Firestore /cities collection
+      try {
+        const snap = await getDocs(collection(db, 'cities'));
+        if (!snap.empty) {
+          snap.forEach((docSnap) => {
+            const data = docSnap.data() as City;
+            const existing = mergedMap.get(docSnap.id);
+            mergedMap.set(docSnap.id, existing ? { ...existing, ...data, id: docSnap.id } : { ...data, id: docSnap.id });
+          });
+          // Cache merged result
+          localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(Array.from(mergedMap.values())));
+        }
+      } catch (err) {
+        console.warn('Firestore cities fetch fallback:', err);
+      }
+
+      setCities(Array.from(mergedMap.values()));
+    };
+
+    loadCities();
+  }, []);
+
+  const handleToggleCity = async (id: string) => {
+    let targetCity: City | undefined;
+    setCities((prev) => {
+      const next = prev.map((c) => {
+        if (c.id === id) {
+          targetCity = { ...c, active: !c.active };
+          return targetCity;
+        }
+        return c;
+      });
+      try {
+        localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    if (targetCity) {
+      try {
+        await setDoc(doc(db, 'cities', id), { active: (targetCity as City).active }, { merge: true });
+      } catch (err) {
+        console.error('Failed to sync city status to Firestore:', err);
+      }
+    }
   };
 
-  const handleSaveCityEdit = (updatedCity: City) => {
-    setCities((prev) =>
-      prev.map((c) => (c.id === updatedCity.id ? updatedCity : c))
-    );
+  const handleSaveCityEdit = async (updatedCity: City) => {
+    setCities((prev) => {
+      const next = prev.map((c) => (c.id === updatedCity.id ? updatedCity : c));
+      try {
+        localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    try {
+      await setDoc(doc(db, 'cities', updatedCity.id), updatedCity, { merge: true });
+    } catch (err) {
+      console.error('Failed to persist city edit to Firestore:', err);
+    }
   };
 
-  const handleAddCity = (e: React.FormEvent) => {
+  const handleAddCity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCityName || !newCityLat || !newCityLng) return;
-    const newId = newCityName.toLowerCase().replace(/\s+/g, '_');
+    const newId = newCityName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     const item: City = {
       id: newId,
       name: newCityName,
@@ -133,13 +211,33 @@ export default function AdminApp() {
       lat: parseFloat(newCityLat),
       lng: parseFloat(newCityLng),
       services: ['bike', 'auto', 'cab', 'b2b'],
+      address: newCityAddress.trim() || undefined,
+      landmarkNote: newCityLandmark.trim() || undefined,
+      pincode: newCityPincode.trim() || undefined,
       active: true
     };
-    setCities((prev) => [item, ...prev]);
+
+    setCities((prev) => {
+      const next = [item, ...prev];
+      try {
+        localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    try {
+      await setDoc(doc(db, 'cities', item.id), item);
+    } catch (err) {
+      console.error('Failed to save new city to Firestore:', err);
+    }
+
     setNewCityName('');
     setNewCityState('');
     setNewCityLat('');
     setNewCityLng('');
+    setNewCityAddress('');
+    setNewCityLandmark('');
+    setNewCityPincode('');
   };
 
   const handleSaveOfficeLandmark = (id: string) => {
@@ -413,7 +511,7 @@ export default function AdminApp() {
                       key={city.id}
                       className="p-2.5 hover:bg-slate-900/90 rounded-xl flex items-center justify-between transition-colors border border-transparent hover:border-slate-800"
                     >
-                      <div>
+                      <div className="flex-1 min-w-0 pr-3">
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-xs text-white">{city.name}</span>
                           <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-medium">
@@ -423,6 +521,22 @@ export default function AdminApp() {
                             ({city.lat.toFixed(3)}, {city.lng.toFixed(3)})
                           </span>
                         </div>
+
+                        {/* Physical City Office Address display */}
+                        {city.address && (
+                          <div className="mt-1.5 text-[11px] text-amber-300/90 flex items-start space-x-1.5 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1 max-w-xl">
+                            <span className="shrink-0 text-xs">🏢</span>
+                            <div className="truncate">
+                              <span className="font-semibold text-amber-400">Office: </span>
+                              <span>{city.address}</span>
+                              {city.pincode && <span className="font-mono text-slate-400 ml-1">({city.pincode})</span>}
+                              {city.landmarkNote && (
+                                <span className="text-slate-400 italic ml-1.5">• 📍 {city.landmarkNote}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center space-x-1.5 mt-1">
                           {city.services.map((s) => (
                             <span key={s} className="text-[9px] uppercase font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded">
@@ -524,6 +638,46 @@ export default function AdminApp() {
                           value={newCityLng}
                           onChange={(e) => setNewCityLng(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-slate-300 flex items-center space-x-1">
+                          <span>🏢</span>
+                          <span>Physical City Office Address (Optional)</span>
+                        </label>
+                        <span className="text-[10px] text-slate-500 font-mono">Operations Hub</span>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. 3rd Floor, Sai Prithvi Arcade, Madhapur"
+                        value={newCityAddress}
+                        onChange={(e) => setNewCityAddress(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Landmark Hint</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Near Kavuri Hills"
+                          value={newCityLandmark}
+                          onChange={(e) => setNewCityLandmark(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Postal Pincode</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 500081"
+                          value={newCityPincode}
+                          onChange={(e) => setNewCityPincode(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none font-mono"
                         />
                       </div>
                     </div>

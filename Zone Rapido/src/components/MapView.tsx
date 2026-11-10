@@ -234,6 +234,22 @@ export const MapView: React.FC<MapProps> = ({
                         <div className="font-bold text-sm text-amber-800">{city.name}</div>
                       </div>
                       <div className="text-slate-500 font-medium mb-1">{city.state}</div>
+
+                      {city.address && (
+                        <div className="my-1.5 p-1.5 bg-amber-50 rounded border border-amber-200 text-[11px] leading-tight">
+                          <div className="font-bold text-[10px] text-amber-900 flex items-center space-x-1">
+                            <span>🏢</span>
+                            <span>City Office:</span>
+                          </div>
+                          <div className="text-slate-700 mt-0.5">{city.address}</div>
+                          {city.pincode && (
+                            <div className="text-[10px] text-slate-500 font-mono mt-0.5">PIN: {city.pincode}</div>
+                          )}
+                          {city.landmarkNote && (
+                            <div className="text-[10px] text-amber-800 italic mt-0.5">📍 {city.landmarkNote}</div>
+                          )}
+                        </div>
+                      )}
                       {city.distance !== undefined && (
                         <div className="font-semibold text-slate-700 mb-1">
                           Road Distance:{' '}
