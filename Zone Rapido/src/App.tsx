@@ -9,6 +9,8 @@ import { MapView } from './components/MapView';
 import { SearchAutocomplete } from './components/SearchAutocomplete';
 import { AdBanner } from './components/AdBanner';
 import { GuideModal } from './components/GuideModal';
+import { BetaBanner } from './components/BetaBanner';
+import { MethodologyModal } from './components/MethodologyModal';
 
 const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
   { id: 'bike', label: 'Bike Taxi' },
@@ -22,6 +24,8 @@ const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
 export function App() {
   const [isInitialSplash, setIsInitialSplash] = useState(true);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'cities' | 'offices'>('cities');
   const [cities, setCities] = useState<City[]>(() => {
@@ -257,7 +261,7 @@ export function App() {
 
   return (
     <div
-      className={`flex flex-col h-screen w-screen select-none overflow-hidden font-sans transition-colors duration-200 ${
+      className={`flex flex-col h-screen h-[100dvh] w-screen select-none overflow-hidden font-sans transition-colors duration-200 overscroll-none pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] ${
         isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
       }`}
     >
@@ -280,77 +284,81 @@ export function App() {
 
       {/* Top Navbar */}
       <header
-        className={`h-14 border-b px-4 flex items-center justify-between shrink-0 transition-colors ${
+        className={`h-14 border-b px-3 sm:px-4 flex items-center justify-between shrink-0 transition-colors ${
           isDarkMode
             ? 'border-slate-800 bg-slate-900/90'
             : 'border-slate-200 bg-white/95 shadow-sm'
         }`}
       >
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-400 p-1 flex items-center justify-center shadow-lg shadow-amber-400/20">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-400 p-1 flex items-center justify-center shadow-lg shadow-amber-400/20 shrink-0">
             <img src="/logo.svg" alt="Rapido" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className={`font-black text-sm tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          <div className="min-w-0">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <span className={`font-black text-xs sm:text-sm tracking-wide shrink-0 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                 RAPIDO
               </span>
-              <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-semibold">
-                Coverage Directory
-              </span>
+              <button
+                onClick={() => setIsMethodologyOpen(true)}
+                title="View Data Methodology & Verification Sources"
+                className="text-[9px] sm:text-[10px] bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold shrink-0 transition-colors"
+              >
+                Beta v0.9 ↗
+              </button>
             </div>
-            <p className="text-[10px] text-slate-400 leading-none">95 Active Operating Cities • Roppen Statutory Directory</p>
+            <p className="text-[10px] text-slate-400 leading-none truncate hidden sm:block">95 Active Operating Cities • Roppen Statutory Directory</p>
           </div>
         </div>
 
         {/* Tab & Feature Controls */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
           {/* Main List Mode */}
           <div
             id="tour-offices-tab"
-            className={`flex p-1 rounded-xl border ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}
+            className={`flex p-0.5 sm:p-1 rounded-xl border ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}
           >
             <button
               onClick={() => {
                 setActiveTab('cities');
                 setShowCityPins(true);
               }}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'cities'
                   ? 'bg-amber-400 text-slate-950 shadow'
                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
-              Active Cities ({rankedCities.length})
+              Cities ({rankedCities.length})
             </button>
             <button
               onClick={() => {
                 setActiveTab('offices');
                 setShowOfficePins(true);
               }}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all ${
                 activeTab === 'offices'
                   ? 'bg-blue-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
-              Registered Offices ({rankedOffices.length})
+              Offices ({rankedOffices.length})
             </button>
           </div>
 
           {/* Road Distance Status Indicator */}
           {isCalculatingRoad && (
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 font-medium">
+            <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 font-medium">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-              <span>Calculating Road Routes...</span>
+              <span>Routing...</span>
             </div>
           )}
 
           {/* Municipal Boundary Status Indicator */}
           {isLoadingBoundary && (
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-blue-500/10 border-blue-500/30 text-blue-400 font-medium">
+            <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-blue-500/10 border-blue-500/30 text-blue-400 font-medium">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-              <span>Loading City Boundary...</span>
+              <span>Boundary...</span>
             </div>
           )}
 
@@ -358,20 +366,20 @@ export function App() {
           <button
             onClick={() => setIsDarkMode((prev) => !prev)}
             title="Toggle Dark/Light Mode"
-            className={`px-2.5 py-1 text-xs rounded-xl border transition-all ${
+            className={`px-2 sm:px-2.5 py-1 text-xs rounded-xl border transition-all ${
               isDarkMode
                 ? 'bg-slate-900 border-slate-800 text-amber-300 hover:bg-slate-800'
                 : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 shadow-sm'
             }`}
           >
-            {isDarkMode ? 'Light' : 'Dark'}
+            {isDarkMode ? '☀️' : '🌙'}
           </button>
 
           {/* Guide / Tutorial ? Button */}
           <button
             onClick={() => setIsGuideOpen(true)}
             title="User Guide & Tutorial (Press ?)"
-            className="w-7 h-7 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg shadow-amber-400/20 transition-all hover:scale-105"
+            className="w-7 h-7 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg shadow-amber-400/20 transition-all hover:scale-105 shrink-0"
           >
             ?
           </button>
@@ -413,11 +421,16 @@ export function App() {
         </div>
       </header>
 
+      {/* Operational Public Beta Transparency Banner */}
+      <BetaBanner isDarkMode={isDarkMode} onOpenMethodology={() => setIsMethodologyOpen(true)} />
+
       {/* Main Workspace */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         {/* Left Control Panel */}
         <div
           className={`w-full md:w-[440px] lg:w-[480px] border-r flex flex-col h-full shrink-0 transition-colors ${
+            mobileView === 'list' ? 'flex' : 'hidden md:flex'
+          } ${
             isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
           }`}
         >
@@ -541,7 +554,7 @@ export function App() {
 
           {/* Tab 1: Active Cities List */}
           {activeTab === 'cities' && (
-            <div id="tour-city-list" className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            <div id="tour-city-list" className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
                 <span>Rapido Live Cities ({rankedCities.length})</span>
                 <span>Road Transportation Distance</span>
@@ -554,7 +567,12 @@ export function App() {
                 return (
                   <div
                     key={city.id}
-                    onClick={() => setSelectedCity(city)}
+                    onClick={() => {
+                      setSelectedCity(city);
+                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                        setMobileView('map');
+                      }
+                    }}
                     className={`p-3 rounded-xl border transition-all cursor-pointer ${
                       isSelected
                         ? 'border-amber-400 ring-2 ring-amber-400/40 bg-amber-400/10'
@@ -656,7 +674,7 @@ export function App() {
 
           {/* Tab 2: Legally Verified Statutory Offices List */}
           {activeTab === 'offices' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
                 <span>Roppen Transportation Statutory Offices ({rankedOffices.length})</span>
                 <span>Road Transportation Distance</span>
@@ -668,8 +686,14 @@ export function App() {
                 return (
                   <div
                     key={office.id}
-                    className={`p-4 rounded-xl border shadow-sm ${
-                      isDarkMode ? 'bg-slate-950/90 border-blue-500/40' : 'bg-white border-blue-500/40'
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                        setShowOfficePins(true);
+                        setMobileView('map');
+                      }
+                    }}
+                    className={`p-4 rounded-xl border shadow-sm cursor-pointer transition-all ${
+                      isDarkMode ? 'bg-slate-950/90 border-blue-500/40 hover:border-blue-400' : 'bg-white border-blue-500/40 hover:border-blue-500'
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -734,7 +758,9 @@ export function App() {
         </div>
 
         {/* Right / Interactive Map Canvas */}
-        <div className={`flex-1 h-full p-3 flex flex-col ${isDarkMode ? 'bg-slate-950' : 'bg-slate-100'}`}>
+        <div className={`flex-1 h-full p-2 sm:p-3 flex flex-col relative ${
+          mobileView === 'map' ? 'flex' : 'hidden md:flex'
+        } ${isDarkMode ? 'bg-slate-950' : 'bg-slate-100'}`}>
           <MapView
             cities={rankedCities}
             offices={rankedOffices}
@@ -750,10 +776,43 @@ export function App() {
             onSelectCity={(city) => setSelectedCity(city)}
           />
         </div>
+
+        {/* Mobile Floating View Mode Switcher (Thumb Ergonomics) */}
+        <div className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-900/95 border border-slate-700/80 rounded-full p-1 shadow-2xl backdrop-blur-md">
+          <button
+            onClick={() => setMobileView('list')}
+            className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+              mobileView === 'list'
+                ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>📋</span>
+            <span>Directory ({activeTab === 'cities' ? rankedCities.length : rankedOffices.length})</span>
+          </button>
+          <button
+            onClick={() => setMobileView('map')}
+            className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+              mobileView === 'map'
+                ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🗺️</span>
+            <span>Live Map</span>
+          </button>
+        </div>
       </div>
 
       {/* Guide Tutorial Modal */}
       <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+
+      {/* Methodology & Verification Modal */}
+      <MethodologyModal
+        isOpen={isMethodologyOpen}
+        onClose={() => setIsMethodologyOpen(false)}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 }

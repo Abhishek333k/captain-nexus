@@ -275,7 +275,7 @@ export default function AdminApp() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
+    <div className="flex flex-col h-screen h-[100dvh] w-screen bg-slate-950 text-slate-100 font-sans select-none overflow-hidden overscroll-none pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* SilenVault Splash Screen */}
       {isSplashLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-opacity duration-300">
@@ -294,19 +294,19 @@ export default function AdminApp() {
       )}
 
       {/* Top Navbar */}
-      <header className="h-14 border-b border-slate-800 bg-slate-900 px-6 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-700/80 p-1.5 flex items-center justify-center shadow-lg shadow-rose-500/10">
+      <header className="h-auto sm:h-14 border-b border-slate-800 bg-slate-900 px-3 sm:px-6 py-2 sm:py-0 flex items-center justify-between shrink-0 gap-2">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-950 border border-slate-700/80 p-1.5 flex items-center justify-center shadow-lg shadow-rose-500/10 shrink-0">
             <img src="/silenvault-logo.svg" alt="SilenVault" className="w-full h-full object-contain" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-sm tracking-wide text-white">SILENVAULT MOBILITY</span>
-              <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30 font-bold uppercase">
+              <span className="font-bold text-xs sm:text-sm tracking-wide text-white truncate">SILENVAULT MOBILITY</span>
+              <span className="text-[9px] sm:text-[10px] bg-rose-500/20 text-rose-400 px-1.5 sm:px-2 py-0.5 rounded border border-rose-500/30 font-bold uppercase shrink-0">
                 Zone Admin
               </span>
             </div>
-            <p className="text-[10px] text-slate-400">admin.taxi.silenvault.com • {currentUser.email}</p>
+            <p className="text-[10px] text-slate-400 truncate max-w-[160px] sm:max-w-none">admin.taxi.silenvault.com • {currentUser.email}</p>
           </div>
         </div>
 
@@ -334,7 +334,7 @@ export default function AdminApp() {
       {/* MAIN VIEW AREA: Hub Dashboard Cards OR High-Density Platform Manager */}
       {!selectedFleet ? (
         /* ================= 1. FLEET HUB DASHBOARD (CARDS VIEW) ================= */
-        <main className="flex-1 overflow-y-auto p-8 max-w-6xl mx-auto w-full flex flex-col justify-center">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 max-w-6xl mx-auto w-full flex flex-col justify-start md:justify-center">
           <div className="text-center mb-10">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400 text-xs font-semibold mb-4">
               <span className="w-2 h-2 rounded-full bg-rose-500"></span>
@@ -427,61 +427,61 @@ export default function AdminApp() {
         /* ================= 2. RAPIDO HIGH-DENSITY OPERATIONS CONSOLE ================= */
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Sub-header for Active Fleet Platform */}
-          <div className="h-12 border-b border-slate-800 bg-slate-950 px-6 flex items-center justify-between shrink-0">
-            <div className="flex items-center space-x-3">
+          <div className="h-auto sm:h-12 border-b border-slate-800 bg-slate-950 px-3 sm:px-6 py-2 sm:py-0 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <button
                 onClick={() => navigateToFleet(null)}
                 className="text-xs text-slate-400 hover:text-white flex items-center space-x-1 font-semibold"
               >
                 <span>&larr;</span>
-                <span>Fleet Dashboard</span>
+                <span className="hidden sm:inline">Fleet Dashboard</span>
               </button>
               <span className="text-slate-600">/</span>
               <div className="flex items-center space-x-2">
                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                 <span className="font-bold text-xs uppercase text-amber-400 tracking-wider">
-                  {selectedFleet} Operations Console
+                  {selectedFleet} Operations
                 </span>
-                <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+                <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono hidden sm:inline">
                   {cities.length} Cities | {offices.length} Offices
                 </span>
               </div>
             </div>
 
             {/* Inner Tabs for the Active Fleet */}
-            <div className="flex items-center space-x-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <div className="flex items-center space-x-1 sm:space-x-2 bg-slate-900 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
               <button
                 onClick={() => setActiveTab('cities')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                   activeTab === 'cities' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Operating Cities ({cities.length})
+                Cities ({cities.length})
               </button>
               <button
                 onClick={() => setActiveTab('offices')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                   activeTab === 'offices' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Registered Offices ({offices.length})
+                Offices ({offices.length})
               </button>
               <button
                 onClick={() => setActiveTab('boundaries')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                   activeTab === 'boundaries' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                GeoJSON Boundary Editor
+                Boundaries
               </button>
             </div>
           </div>
 
           {/* TAB 1: OPERATING CITIES (High Density Split-Pane with Search & In-Place Edit) */}
           {activeTab === 'cities' && (
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               {/* Left Column: Searchable Table / List of Cities */}
-              <div className="w-3/5 border-r border-slate-800 flex flex-col">
+              <div className="w-full md:w-3/5 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col h-1/2 md:h-full">
                 <div className="p-3 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between gap-3">
                   <div className="relative flex-1">
                     <input
@@ -578,7 +578,7 @@ export default function AdminApp() {
               </div>
 
               {/* Right Column: Register City Form & Quick Metrics */}
-              <div className="w-2/5 p-6 overflow-y-auto bg-slate-900/30 flex flex-col justify-between">
+              <div className="w-full md:w-2/5 p-4 sm:p-6 overflow-y-auto bg-slate-900/30 flex flex-col justify-between h-1/2 md:h-full">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-bold text-sm text-amber-400">Register New Operating City</h3>
@@ -803,7 +803,7 @@ export default function AdminApp() {
                 Paste or inspect raw GeoJSON polygons to overwrite boundaries for any active operating city.
               </p>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="border border-slate-800 rounded-xl p-4 bg-slate-900/60 space-y-3">
                   <label className="block text-xs font-semibold text-slate-300">Select City</label>
                   <select
@@ -840,7 +840,7 @@ export default function AdminApp() {
                   </button>
                 </div>
 
-                <div className="col-span-2 border border-slate-800 rounded-xl p-4 bg-slate-900/30 flex items-center justify-center text-slate-500 text-xs">
+                <div className="col-span-1 md:col-span-2 border border-slate-800 rounded-xl p-4 bg-slate-900/30 flex items-center justify-center text-slate-500 text-xs">
                   Map preview canvas will render the uploaded GeoJSON geometry before publishing.
                 </div>
               </div>
