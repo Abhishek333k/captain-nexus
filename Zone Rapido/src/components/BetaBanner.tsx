@@ -36,12 +36,11 @@ export const BetaBanner: React.FC<BetaBannerProps> = ({ isDarkMode, onOpenMethod
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Left: Beta badge & Message */}
         <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
-          <span className="shrink-0 text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 shadow-sm">
-            Operational Beta v0.9
+          <span className="shrink-0 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 shadow-sm">
+            Beta Directory
           </span>
           <p className="truncate text-[11px] sm:text-xs text-slate-300 font-medium">
-            <span className="hidden sm:inline">Coverage directory under continuous verification. </span>
-            <span>Municipal boundaries, fleet tiers, and office locations are actively updating in real-time.</span>
+            <span>City coverage and office addresses are actively expanding and being updated.</span>
           </p>
         </div>
 
@@ -54,7 +53,7 @@ export const BetaBanner: React.FC<BetaBannerProps> = ({ isDarkMode, onOpenMethod
                 isDarkMode ? 'text-amber-400 hover:text-amber-300' : 'text-amber-800 hover:text-amber-950'
               }`}
             >
-              Sources & Methodology
+              Learn More
             </button>
           )}
           <button
@@ -69,4 +68,3 @@ export const BetaBanner: React.FC<BetaBannerProps> = ({ isDarkMode, onOpenMethod
     </div>
   );
 };
-

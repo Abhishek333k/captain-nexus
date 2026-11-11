@@ -344,7 +344,7 @@ export default function AdminApp() {
               Select Fleet Management Dashboard
             </h1>
             <p className="text-slate-400 text-xs md:text-sm mt-2 max-w-xl mx-auto">
-              Choose the transport fleet platform to manage operating city coverages, statutory offices, and municipal GeoJSON boundaries.
+              Choose the transport fleet platform to manage operating city coverages, local offices, and service boundaries.
             </p>
           </div>
 
@@ -367,7 +367,7 @@ export default function AdminApp() {
                 Rapido Operations
               </h2>
               <p className="text-xs text-slate-400 leading-relaxed mb-6">
-                Manage 95 operating cities, Roppen statutory offices, service categories (Bike, Auto, Cab), and custom GeoJSON polygon boundaries.
+                Manage 95 operating cities, verified city offices, service categories (Bike, Auto, Cab), and custom service boundaries.
               </p>
 
               <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
@@ -707,7 +707,7 @@ export default function AdminApp() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
                 <div>
                   <h3 className="font-bold text-base text-blue-400">
-                    Roppen Transportation Statutory Offices ({offices.length})
+                    Official City Offices & Support Hubs ({offices.length})
                   </h3>
                   <p className="text-xs text-slate-400">
                     Manage corporate headquarters, regional branches, and legal service addresses.

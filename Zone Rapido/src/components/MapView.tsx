@@ -301,8 +301,8 @@ export const MapView: React.FC<MapProps> = ({
                     <div className="text-slate-500 text-[10px] font-medium mb-1">
                       PIN: {office.pincode} • Timing: {office.timing}
                     </div>
-                    <div className="text-[9px] text-blue-700 font-semibold mb-1">
-                      Source: {office.statutorySource}
+                    <div className="text-[9px] text-emerald-700 font-semibold mb-1">
+                      ✓ Verified Office Location
                     </div>
                     {office.distance !== undefined && (
                       <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1">

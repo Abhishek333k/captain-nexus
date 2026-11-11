@@ -11,6 +11,7 @@ import { AdBanner } from './components/AdBanner';
 import { GuideModal } from './components/GuideModal';
 import { BetaBanner } from './components/BetaBanner';
 import { MethodologyModal } from './components/MethodologyModal';
+import { WelcomeBetaModal } from './components/WelcomeBetaModal';
 
 const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
   { id: 'bike', label: 'Bike Taxi' },
@@ -23,6 +24,7 @@ const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
 
 export function App() {
   const [isInitialSplash, setIsInitialSplash] = useState(true);
+  const [isWelcomeBetaOpen, setIsWelcomeBetaOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
@@ -96,13 +98,28 @@ export function App() {
   const [showOfficePins, setShowOfficePins] = useState(false);
   const [showSurgeHexagons, setShowSurgeHexagons] = useState(false);
 
-  // Splash screen auto dismiss
+  // Splash screen auto dismiss & 1st-timer welcome beta prompt
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitialSplash(false);
+      try {
+        const hasSeenWelcome = localStorage.getItem('silenvault_welcome_beta_seen');
+        if (!hasSeenWelcome) {
+          setTimeout(() => {
+            setIsWelcomeBetaOpen(true);
+          }, 400);
+        }
+      } catch {}
     }, 1200);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleCloseWelcomeBeta = () => {
+    setIsWelcomeBetaOpen(false);
+    try {
+      localStorage.setItem('silenvault_welcome_beta_seen', 'true');
+    } catch {}
+  };
 
   // Global Keyboard Shortcuts (Ctrl+F for search, Esc to clear / dismiss)
   useEffect(() => {
@@ -273,10 +290,10 @@ export function App() {
               <img src="/logo.svg" alt="Rapido Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-xl font-black text-white tracking-wider">RAPIDO</h1>
-            <p className="text-xs text-slate-400 mt-1 font-medium">Operating City Coverage & Statutory Directory</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">City Coverage & Verified Local Offices</p>
             <div className="mt-6 flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-              <span className="text-[11px] text-slate-500 font-mono">Loading active network...</span>
+              <span className="text-[11px] text-slate-500 font-medium">Loading coverage map...</span>
             </div>
           </div>
         </div>
@@ -307,7 +324,7 @@ export function App() {
                 Beta v0.9 ↗
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 leading-none truncate hidden sm:block">95 Active Operating Cities • Roppen Statutory Directory</p>
+            <p className="text-[10px] text-slate-400 leading-none truncate hidden sm:block">95 Active Operating Cities • Verified City Offices</p>
           </div>
         </div>
 
@@ -350,7 +367,7 @@ export function App() {
           {isCalculatingRoad && (
             <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-400 font-medium">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-              <span>Routing...</span>
+              <span>Calculating distance...</span>
             </div>
           )}
 
@@ -358,7 +375,7 @@ export function App() {
           {isLoadingBoundary && (
             <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded-xl border bg-blue-500/10 border-blue-500/30 text-blue-400 font-medium">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-              <span>Boundary...</span>
+              <span>Loading boundary...</span>
             </div>
           )}
 
@@ -537,11 +554,11 @@ export function App() {
                   </span>
                   {isInsideBoundary ? (
                     <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded">
-                      Inside City Boundary (Full Shift Eligible)
+                      ✓ Within Official Service Area
                     </span>
                   ) : (
                     <span className="bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium px-2 py-0.5 rounded">
-                      Outside Border (Commute Check Active)
+                      Outside City Center (Nearby Coverage)
                     </span>
                   )}
                 </div>
@@ -672,12 +689,12 @@ export function App() {
             </div>
           )}
 
-          {/* Tab 2: Legally Verified Statutory Offices List */}
+          {/* Tab 2: Verified City Offices List */}
           {activeTab === 'offices' && (
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
-                <span>Roppen Transportation Statutory Offices ({rankedOffices.length})</span>
-                <span>Road Transportation Distance</span>
+                <span>Official City Offices ({rankedOffices.length})</span>
+                <span>Road Driving Distance</span>
               </div>
 
               {rankedOffices.map((office) => {
@@ -702,28 +719,28 @@ export function App() {
                           <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                             {office.type.replace('_', ' ')}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono">CIN: {office.cin}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">Verified Location</span>
                         </div>
                         <h4 className={`text-sm font-bold tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                           {office.name}
                         </h4>
                         <div className="text-[11px] text-amber-500 font-medium mt-0.5">
-                          {office.legalEntity}
+                          {office.city}, {office.state}
                         </div>
                         <p className={`text-[11px] mt-2 leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                           {office.address}
                         </p>
                         {office.landmarkNote && (
                           <p className="text-[11px] text-cyan-500 mt-1 font-medium">
-                            Landmark: {office.landmarkNote}
+                            📍 Landmark: {office.landmarkNote}
                           </p>
                         )}
                         <div className="text-[10px] text-slate-400 mt-2 flex flex-wrap gap-2">
                           <span>PIN: {office.pincode}</span>
-                          <span>Timing: {office.timing}</span>
+                          <span>Hours: {office.timing}</span>
                         </div>
-                        <div className="text-[9px] text-emerald-500 mt-1.5 font-medium">
-                          Source: {office.statutorySource}
+                        <div className="text-[10px] text-emerald-500 mt-1.5 font-medium">
+                          ✓ Local Support & Onboarding Center
                         </div>
                       </div>
 
@@ -811,6 +828,13 @@ export function App() {
       <MethodologyModal
         isOpen={isMethodologyOpen}
         onClose={() => setIsMethodologyOpen(false)}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* 1st-Timer Welcome Beta Pop-Up */}
+      <WelcomeBetaModal
+        isOpen={isWelcomeBetaOpen}
+        onClose={handleCloseWelcomeBeta}
         isDarkMode={isDarkMode}
       />
     </div>
