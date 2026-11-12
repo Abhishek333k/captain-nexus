@@ -13,23 +13,27 @@ Captains and commuters applying or searching from rural, peripheral, or unmapped
 - **Dedicated Firebase Project**: `captain-nexus-199cc` (Project #`770635003132`)
 - **DNS Host**: Cloudflare (CNAME records, SSL verification via Grey Cloud)
 - **Active Subdomains**:
-  - `taxi.silenvault.com` &rarr; `silenvault-taxi.web.app`
-  - `rapido.taxi.silenvault.com` &rarr; `silenvault-taxi-rapido.web.app`
-  - `admin.taxi.silenvault.com` &rarr; `silenvault-taxi-admin.web.app`
-- **Database**: Cloud Firestore (`cities`, `offices`, `boundaries`, `dropbox_payloads`)
+  - `taxi.silenvault.com` &rarr; `silenvault-taxi.web.app` (Clean institutional directory landing page)
+  - `rapido.taxi.silenvault.com` &rarr; `silenvault-taxi-rapido.web.app` (Mobile-ready public transit portal)
+  - `admin.taxi.silenvault.com` &rarr; `silenvault-taxi-admin.web.app` (Protected operations control plane)
+- **Database**: Cloud Firestore (`cities`, `offices`, `boundaries`, `dropbox_payloads`, `feedback_reports`)
 
 ---
 
-## 3. UI/UX & Power Features
-- **Vector Emblems & Splash Screens**:
-  - Custom geometric helmet vector for Rapido directory boot.
-  - Official SilenVault brand emblem for Admin control plane.
+## 3. UI/UX & Compliance Standards
+- **Google Play & Capacitor Compliance**:
+  - `select-none` on interactive elements to prevent browser-like text selection.
+  - Safe-area insets (`pt-[env(safe-area-inset-top)]`, `pb-[env(safe-area-inset-bottom)]`).
+  - No pull-to-refresh reload loops on root containers.
+- **Tone & Messaging**:
+  - Zero vanity jargon, marketing hype, or technical developer explanations in user-facing UI.
+  - Institutional, clean transit terminology.
 - **Keyboard Shortcuts**:
   - `Ctrl + F` / `Cmd + F`: Focuses and selects search input directly.
   - `Esc`: Clears active city selection and dismisses modals.
-- **Interactive Spotlight Guide (`?` Button)**:
-  - Step-by-step gaming-style HUD spotlighting with animated cutout around the active DOM element.
+- **Spotlight Guide (`?` Button)**:
+  - Step-by-step element spotlighting with animated cutout around active DOM elements.
 - **Admin In-Place City Editor**:
-  - Direct modal for updating city names, coordinates, notes, services (`bike`, `auto`, `cab`, `tuk_tuk`, `e_rickshaw`, `b2b`), and active toggles.
+  - Direct modal for updating city names, physical office addresses, landmarks, pin codes, coordinates, notes, services, and active toggles.
 - **Operations Cloud Dropbox**:
   - Persistent staging vault for raw spreadsheets and statutory exports in Firestore.
