@@ -3,115 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SilenVault Mobility</title>
+  <title>SilenVault Mobility | Transit Directory</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @keyframes pulse-glow {
-      0%, 100% { opacity: 0.3; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.05); }
-    }
-    .glow-bg {
-      animation: pulse-glow 6s ease-in-out infinite;
-    }
-  </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-400 selection:text-slate-950 overflow-x-hidden font-sans">
 
-  <!-- Background decorative grid -->
-  <div class="fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]"></div>
-  <div class="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl glow-bg pointer-events-none"></div>
-
   <!-- Header -->
-  <header class="relative z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur px-6 py-4 flex items-center justify-between max-w-7xl mx-auto w-full">
-    <div class="flex items-center space-x-3">
-      <div class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-black text-slate-950 shadow-lg shadow-amber-400/20">
-        T
+  <header class="relative z-10 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between select-none">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-400 flex items-center justify-center font-bold text-slate-950 text-base">
+          SV
+        </div>
+        <div>
+          <span class="font-bold text-sm tracking-wide text-white">SILENVAULT MOBILITY</span>
+          <span class="block text-[11px] text-slate-400 font-mono">taxi.silenvault.com</span>
+        </div>
       </div>
-      <div>
-        <span class="font-bold text-sm tracking-wider text-white">SILENVAULT MOBILITY</span>
-        <span class="block text-[10px] text-slate-400 font-mono">taxi.silenvault.com</span>
+      <div class="text-xs text-slate-400 hidden sm:block">
+        Transit Operations Index
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <main class="relative z-10 max-w-5xl mx-auto px-6 py-16 text-center flex-1 flex flex-col items-center justify-center">
-    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-semibold mb-6">
-      <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-      <span>Transportation Directory</span>
+  <!-- Main Directory Index -->
+  <main class="relative z-10 max-w-5xl mx-auto px-6 py-14 flex-1 flex flex-col items-center justify-center w-full">
+    <div class="text-center max-w-2xl mx-auto mb-10 select-none">
+      <h1 class="text-3xl md:text-5xl font-bold tracking-tight text-white mb-3">
+        Urban Transit & Fleet Directory
+      </h1>
+      <p class="text-slate-400 text-sm md:text-base leading-relaxed">
+        Directory of operating cities, service boundaries, and regional office locations across Indian mobility networks.
+      </p>
     </div>
 
-    <h1 class="text-4xl md:text-6xl font-black tracking-tight text-white mb-6">
-      Fleet Operations <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500">Directory</span>
-    </h1>
-
-    <p class="text-slate-400 text-sm md:text-base max-w-2xl mx-auto mb-12 leading-relaxed">
-      Active servicing boundaries, commute calculators, and statutory office locations across Indian transport networks.
-    </p>
-
-    <!-- Transport Networks Matrix Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl text-left">
+    <!-- Fleet Platforms Matrix -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl text-left select-none">
       <!-- Rapido Fleet (Active) -->
-      <a href="https://rapido.taxi.silenvault.com" class="group relative rounded-2xl border border-amber-400/40 bg-gradient-to-b from-slate-900/90 to-slate-950 p-6 shadow-xl hover:border-amber-400 transition-all hover:scale-[1.02]">
+      <a href="https://rapido.taxi.silenvault.com" class="group relative rounded-xl border border-amber-400/30 bg-slate-900/80 hover:bg-slate-900 p-6 transition-all hover:border-amber-400/70 hover:shadow-lg hover:shadow-amber-400/5">
         <div class="flex items-center justify-between mb-4">
-          <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center font-black text-slate-950 text-base">
+          <div class="w-10 h-10 rounded-lg bg-amber-400 flex items-center justify-center font-bold text-slate-950 text-base">
             R
           </div>
-          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            Active
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            Available
           </span>
         </div>
-        <h3 class="text-lg font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">Rapido Hubs & Offices</h3>
+        <h2 class="text-base font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">Rapido</h2>
         <p class="text-xs text-slate-400 leading-relaxed mb-4">
-          95 active servicing cities, municipal boundaries, Roppen Transportation statutory offices, and road commute calculators.
+          95 verified operating cities, service boundaries, physical office addresses, and road commute distances.
         </p>
-        <span class="inline-flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
-          Open Directory &rarr;
-        </span>
+        <div class="inline-flex items-center text-xs font-semibold text-amber-400 group-hover:underline">
+          View Directory &rarr;
+        </div>
       </a>
 
-      <!-- Ola Fleet (Upcoming) -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 opacity-60">
+      <!-- Uber India (In Progress) -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-6">
         <div class="flex items-center justify-between mb-4">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-base border border-emerald-500/30">
-            O
+          <div class="w-10 h-10 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-bold text-base border border-slate-700">
+            U
           </div>
-          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-            Upcoming
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60">
+            Dataset In Progress
           </span>
         </div>
-        <h3 class="text-lg font-bold text-white mb-1">Ola Mobility</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Operating cluster integration for auto, cab, and electric two-wheeler onboarding.
+        <h2 class="text-base font-bold text-slate-200 mb-1">Uber India</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          City tiers, airport coverage zones, and partner support center locations.
         </p>
       </div>
 
-      <!-- Uber Fleet (Upcoming) -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 opacity-60">
+      <!-- Ola Cabs (In Progress) -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-6">
         <div class="flex items-center justify-between mb-4">
-          <div class="w-10 h-10 rounded-xl bg-slate-800 text-slate-200 flex items-center justify-center font-black text-base border border-slate-700">
-            U
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-base border border-emerald-500/20">
+            O
           </div>
-          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-            Upcoming
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60">
+            Dataset In Progress
           </span>
         </div>
-        <h3 class="text-lg font-bold text-white mb-1">Uber Fleet</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Cluster coverage, operating hubs, and regional operations verification.
+        <h2 class="text-base font-bold text-slate-200 mb-1">Ola Cabs</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Operational city clusters, vehicle categories, and regional onboarding centers.
         </p>
       </div>
     </div>
   </main>
 
   <!-- Footer -->
-  <footer class="relative z-10 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-2">
-      <span>&copy; 2026 SilenVault. All rights reserved.</span>
-      <span class="font-mono text-[11px] text-slate-500">Node: Asia-South1</span>
+  <footer class="relative z-10 border-t border-slate-900 py-6 text-xs text-slate-500 select-none">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      <span>&copy; 2026 SilenVault Transit. Public Information Directory.</span>
+      <span class="text-slate-500">Verified Mobility Datasets</span>
     </div>
   </footer>
 
 </body>
 </html>
-
