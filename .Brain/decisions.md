@@ -41,6 +41,12 @@
    - City directory cards and MapView Leaflet popups display physical city office addresses with dedicated iconography and landmark hints.
 7. **Purge of Developer & Marketing Vanity Jargon**:
    - Eliminated technical jargon ("CIN", "MCA filings", "Haversine sort", "municipal boundary polygon", "Firestore DB sync") from public-facing UI modals, banners, and landing pages. Replaced with clear, user-facing transit terminology.
+8. **Map Attribution & Watermark Purge**:
+   - Leaflet watermark and attribution control overlay (`.leaflet-control-attribution`, `.leaflet-attribution-flag`) completely removed via `attributionControl={false}` and forced CSS suppression (`display: none !important`), keeping map canvas clean and institutional.
+9. **Invisible Monetization Cell Positioning**:
+   - Positioned `<AdBanner />` after the scrollable list container, pinned at the bottom of the sidebar.
+   - Guarded against AdSense policy violations (rejecting forced 5-min timer modal popups which trigger account strikes).
+   - Component remains 100% invisible (`return null;` / zero height) until live ad content is served from Google AdSense.
 
 ---
 
