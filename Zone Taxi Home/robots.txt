@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://taxi.silenvault.com/sitemap.xml
+

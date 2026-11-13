@@ -30,9 +30,21 @@ html, body, #root {
   background: #3b4557;
 }
 
-/* Leaflet dark theme map enhancements */
+/* Map enhancements */
 .leaflet-container {
   width: 100% !important;
   height: 100% !important;
   background: #11151c !important;
+}
+
+/* Hide Leaflet watermark & attribution control overlay */
+.leaflet-control-attribution,
+.leaflet-attribution-flag {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
 }

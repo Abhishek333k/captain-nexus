@@ -6,9 +6,9 @@ interface AdBannerProps {
 }
 
 /**
- * Responsive Google AdSense placement.
- * Automatically collapses and removes itself from the DOM if no ad is served
- * or while in local development/unconfigured state to prevent blank spaces.
+ * Responsive Google AdSense cell.
+ * Stays completely invisible (0px height, null DOM) unless Google AdSense
+ * is configured AND has successfully returned/rendered a live ad.
  */
 export const AdBanner: React.FC<AdBannerProps> = ({
   slotId = import.meta.env.VITE_ADSENSE_SLOT_ID,
@@ -27,23 +27,32 @@ export const AdBanner: React.FC<AdBannerProps> = ({
       if (typeof window !== 'undefined') {
         const adsbygoogle = (window as any).adsbygoogle || [];
         adsbygoogle.push({});
-        // Check if AdSense successfully populated an iframe
-        const timer = setTimeout(() => {
+
+        // Detect if AdSense successfully loaded and rendered inside the container
+        const checkFilled = () => {
           const adContainer = document.getElementById(`ad-slot-${slotId}`);
+          const ins = adContainer?.querySelector('ins.adsbygoogle');
           const hasIframe = adContainer?.querySelector('iframe');
-          if (hasIframe) {
+          const isFilled = ins?.getAttribute('data-ad-status') === 'filled' || Boolean(hasIframe);
+          if (isFilled) {
             setAdLoaded(true);
           }
-        }, 1500);
+        };
 
-        return () => clearTimeout(timer);
+        const timer1 = setTimeout(checkFilled, 1500);
+        const timer2 = setTimeout(checkFilled, 3500);
+
+        return () => {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+        };
       }
     } catch {
       setAdLoaded(false);
     }
   }, [isConfigured, slotId]);
 
-  // If there is no real ad loaded or AdSense is not configured, hide completely
+  // Completely invisible until actual live ad content is served by AdSense
   if (!isConfigured || !adLoaded) {
     return null;
   }
@@ -51,20 +60,22 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   return (
     <div
       id={`ad-slot-${slotId}`}
-      className="mx-4 my-2 p-2 rounded-xl bg-slate-950/80 border border-slate-800 text-center transition-all"
+      className="p-2 border-t border-slate-800/80 bg-slate-950/95 backdrop-blur shrink-0 transition-all select-none"
     >
-      <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1 px-1">
+      <div className="flex items-center justify-between text-[9px] text-slate-500 mb-1 px-1">
         <span>SPONSORED</span>
-        <span className="text-[9px] bg-slate-800 px-1 py-0.2 rounded text-slate-400">Ad</span>
+        <span className="text-[9px] bg-slate-800/80 px-1 py-0.5 rounded text-slate-400">Ad</span>
       </div>
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block', width: '100%' }}
-        data-ad-client={clientId}
-        data-ad-slot={slotId}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
+      <div className="w-full overflow-hidden flex justify-center">
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block', minWidth: '250px', width: '100%', maxHeight: '90px' }}
+          data-ad-client={clientId}
+          data-ad-slot={slotId}
+          data-ad-format="horizontal"
+          data-full-width-responsive="true"
+        />
+      </div>
     </div>
   );
 };

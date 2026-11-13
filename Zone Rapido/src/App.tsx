@@ -566,9 +566,6 @@ export function App() {
             </div>
           )}
 
-          {/* AdSense Placement */}
-          <AdBanner />
-
           {/* Tab 1: Active Cities List */}
           {activeTab === 'cities' && (
             <div id="tour-city-list" className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
@@ -772,6 +769,9 @@ export function App() {
               })}
             </div>
           )}
+
+          {/* AdSense Placement: After list frame, sticky at sidebar bottom, invisible until filled */}
+          <AdBanner />
         </div>
 
         {/* Right / Interactive Map Canvas */}
