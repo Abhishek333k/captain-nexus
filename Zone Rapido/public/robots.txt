@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rapido.taxi.silenvault.com/sitemap.xml
