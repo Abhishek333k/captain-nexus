@@ -47,6 +47,18 @@
    - Positioned `<AdBanner />` after the scrollable list container, pinned at the bottom of the sidebar.
    - Guarded against AdSense policy violations (rejecting forced 5-min timer modal popups which trigger account strikes).
    - Component remains 100% invisible (`return null;` / zero height) until live ad content is served from Google AdSense.
+10. **Admin Whitelist & Identity Leak Purge**:
+   - Completely stripped all visible administrator email whitelists, partial credentials, and revealing UI hints from `AdminLogin.tsx`.
+   - Error messages standardized to generic security notifications without echoing user identity.
+11. **Dynamic City Count Purge**:
+   - Eradicated all fixed city count references ("95", "95+", "Cities (95)") from public portals (`Zone Taxi Home` and `Zone Rapido`) because operating cities expand dynamically via Firestore.
+12. **Google Maps-Style Selectable Text & 1-Click Clipboard Actions**:
+   - Enabled `-webkit-user-select: text !important; user-select: text !important;` across map tooltips, popups, and city cards.
+   - Inactive cities are fully visible, selectable, and copiable with `Inactive Hub / Service Zone` markers.
+   - Injected 1-click clipboard copy buttons for City Name, Office Address, and Coordinates.
+13. **Disambiguation for Identical / Regional Location Names**:
+   - Solved ambiguous names (e.g., Tadepalli, Narayanpet, Parvathipuram, Bilaspur) by parsing Nominatim `county` (District) and `state` details.
+   - Titles are qualified with `(District, State)`, and debounced requests employ `AbortController` and 5s timeouts (complying with performance rules).
 
 ---
 
