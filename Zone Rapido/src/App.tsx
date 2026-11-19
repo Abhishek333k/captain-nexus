@@ -152,14 +152,17 @@ export function App() {
 
   // Pure Road Distance ranking for Cities with instant fallback sorting
   const rankedCities = useMemo(() => {
-    let list = cities.filter((c) => c.active);
+    let list = [...cities];
 
     if (selectedService !== 'all') {
       list = list.filter((c) => c.services.includes(selectedService));
     }
 
     if (!searchedLocation) {
-      return list.map((c) => ({ ...c, distance: undefined }));
+      // Prioritize active cities first, then alphabetically, followed by inactive/upcoming hubs
+      return list
+        .sort((a, b) => (b.active === a.active ? a.name.localeCompare(b.name) : b.active ? 1 : -1))
+        .map((c) => ({ ...c, distance: undefined }));
     }
 
     return list
@@ -324,7 +327,7 @@ export function App() {
                 Beta v0.9 ↗
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 leading-none truncate hidden sm:block">95 Active Operating Cities • Verified City Offices</p>
+            <p className="text-[10px] text-slate-400 leading-none truncate hidden sm:block">Active Operating Cities • Verified City Offices</p>
           </div>
         </div>
 
@@ -346,7 +349,7 @@ export function App() {
                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
-              Cities ({rankedCities.length})
+              Cities
             </button>
             <button
               onClick={() => {
@@ -359,7 +362,7 @@ export function App() {
                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               }`}
             >
-              Offices ({rankedOffices.length})
+              City Offices
             </button>
           </div>
 
@@ -458,6 +461,7 @@ export function App() {
                 inputRef={searchInputRef}
                 onSelectLocation={handleSelectLocation}
                 isSearching={isSearching}
+                cities={cities}
               />
             </div>
 
@@ -570,7 +574,7 @@ export function App() {
           {activeTab === 'cities' && (
             <div id="tour-city-list" className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
-                <span>Rapido Live Cities ({rankedCities.length})</span>
+                <span>Rapido Operating Directory</span>
                 <span>Road Transportation Distance</span>
               </div>
 
@@ -590,7 +594,7 @@ export function App() {
                     className={`p-3 rounded-xl border transition-all cursor-pointer ${
                       isSelected
                         ? 'border-amber-400 ring-2 ring-amber-400/40 bg-amber-400/10'
-                        : isEligible
+                        : isEligible && city.active
                         ? isDarkMode
                           ? 'bg-slate-950/90 border-emerald-500/40 hover:border-emerald-400 shadow-sm'
                           : 'bg-white border-emerald-500/50 hover:border-emerald-500 shadow-sm'
@@ -600,38 +604,66 @@ export function App() {
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div className="max-w-[70%]">
+                      <div className="max-w-[70%] select-text">
                         <div className="flex items-center space-x-2">
                           <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
-                          <h4 className={`text-sm font-bold tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                          <h4 className={`text-sm font-bold tracking-wide select-text cursor-text ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                             {city.name}
                           </h4>
-                          <span className="text-[10px] text-slate-400">({city.state})</span>
+                          <span className="text-[10px] text-slate-400 select-text">({city.state})</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                navigator.clipboard.writeText(city.name);
+                              }
+                            }}
+                            title="Copy city name"
+                            className="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700 cursor-pointer shrink-0"
+                          >
+                            📋
+                          </button>
                         </div>
 
                         {city.notes && (
-                          <p className="text-[11px] text-amber-500/90 mt-1 leading-snug">
+                          <p className="text-[11px] text-amber-500/90 mt-1 leading-snug select-text cursor-text">
                             Note: {city.notes}
                           </p>
                         )}
 
                         {city.address && (
-                          <div className={`mt-2 p-2 rounded-lg border text-xs leading-relaxed ${
+                          <div className={`mt-2 p-2 rounded-lg border text-xs leading-relaxed select-text ${
                             isDarkMode 
                               ? 'bg-slate-900/90 border-slate-800 text-slate-300' 
                               : 'bg-slate-100/90 border-slate-200 text-slate-700'
                           }`}>
-                            <div className="font-bold flex items-center space-x-1.5 text-[11px] text-amber-400">
-                              <span>🏢</span>
-                              <span>City Office:</span>
+                            <div className="font-bold flex items-center justify-between text-[11px] text-amber-400">
+                              <span className="flex items-center space-x-1.5">
+                                <span>🏢</span>
+                                <span>City Office:</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                    navigator.clipboard.writeText(`${city.address}${city.pincode ? ` PIN: ${city.pincode}` : ''}`);
+                                  }
+                                }}
+                                title="Copy address"
+                                className="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.2 rounded border border-slate-700 cursor-pointer font-normal"
+                              >
+                                Copy
+                              </button>
                             </div>
-                            <p className="mt-0.5 text-[11px] leading-snug">{city.address}</p>
+                            <p className="mt-0.5 text-[11px] leading-snug select-text cursor-text">{city.address}</p>
                             <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px]">
                               {city.pincode && (
-                                <span className="font-mono text-slate-400">PIN: {city.pincode}</span>
+                                <span className="font-mono text-slate-400 select-text">PIN: {city.pincode}</span>
                               )}
                               {city.landmarkNote && (
-                                <span className="text-amber-500/90 italic">📍 {city.landmarkNote}</span>
+                                <span className="text-amber-500/90 italic select-text">📍 {city.landmarkNote}</span>
                               )}
                             </div>
                           </div>
@@ -641,7 +673,7 @@ export function App() {
                           {city.services.map((svc) => (
                             <span
                               key={svc}
-                              className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-semibold ${
+                              className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-semibold select-text ${
                                 isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-700'
                               }`}
                             >
@@ -655,26 +687,32 @@ export function App() {
                         <div className="text-right shrink-0">
                           <div
                             className={`text-sm font-black ${
-                              isEligible ? 'text-emerald-500' : isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                              isEligible && city.active ? 'text-emerald-500' : isDarkMode ? 'text-slate-400' : 'text-slate-500'
                             }`}
                           >
                             {currentDistance} km
                           </div>
                           <span
                             className={`inline-block mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                              isEligible
+                              !city.active
+                                ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                                : isEligible
                                 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                                 : isDarkMode
                                 ? 'bg-slate-800 text-slate-500 border border-slate-700'
                                 : 'bg-slate-200 text-slate-600 border border-slate-300'
                             }`}
                           >
-                            {isEligible ? 'Eligible' : 'Out of Range'}
+                            {!city.active ? 'Inactive Hub' : isEligible ? 'Eligible' : 'Out of Range'}
                           </span>
                         </div>
+                      ) : !city.active ? (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                          Inactive Hub
+                        </span>
                       ) : (
-                        <span className={`text-[10px] px-2 py-0.5 rounded ${
-                          isDarkMode ? 'bg-slate-800/60 text-slate-500' : 'bg-slate-200 text-slate-600'
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                          isDarkMode ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-800'
                         }`}>
                           Active Hub
                         </span>
@@ -690,7 +728,7 @@ export function App() {
           {activeTab === 'offices' && (
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
-                <span>Official City Offices ({rankedOffices.length})</span>
+                <span>Official City Offices</span>
                 <span>Road Driving Distance</span>
               </div>
 
@@ -711,16 +749,31 @@ export function App() {
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div className="max-w-[75%]">
+                      <div className="max-w-[75%] select-text">
                         <div className="flex items-center space-x-1.5 mb-1">
                           <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                             {office.type.replace('_', ' ')}
                           </span>
                           <span className="text-[10px] text-slate-400 font-medium">Verified Location</span>
                         </div>
-                        <h4 className={`text-sm font-bold tracking-wide ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {office.name}
-                        </h4>
+                        <div className="flex items-center space-x-2">
+                          <h4 className={`text-sm font-bold tracking-wide select-text cursor-text ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                            {office.name}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                navigator.clipboard.writeText(`${office.name}, ${office.address}`);
+                              }
+                            }}
+                            title="Copy office address"
+                            className="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700 cursor-pointer shrink-0"
+                          >
+                            📋
+                          </button>
+                        </div>
                         <div className="text-[11px] text-amber-500 font-medium mt-0.5">
                           {office.city}, {office.state}
                         </div>
@@ -805,7 +858,7 @@ export function App() {
             }`}
           >
             <span>📋</span>
-            <span>Directory ({activeTab === 'cities' ? rankedCities.length : rankedOffices.length})</span>
+            <span>Directory</span>
           </button>
           <button
             onClick={() => setMobileView('map')}

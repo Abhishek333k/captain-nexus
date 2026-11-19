@@ -41,7 +41,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
         const userEmail = credential.user?.email;
         if (!isAuthorizedAdmin(userEmail)) {
           await signOut(auth);
-          setErrorMsg(`Access Denied: ${userEmail} is not an authorized administrator.`);
+          setErrorMsg('Access Denied: This account is not authorized for administrative access.');
           return;
         }
         onLoginSuccess();
@@ -68,7 +68,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
       // HARD GATE: Verify email authorization immediately
       if (!isAuthorizedAdmin(userEmail)) {
         await signOut(auth);
-        setErrorMsg(`Access Denied: ${userEmail} is not authorized to access the operations control plane.`);
+        setErrorMsg('Access Denied: This account is not authorized for operations control access.');
         setIsLoading(false);
         return;
       }
@@ -113,7 +113,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
       // HARD GATE: Verify email authorization immediately
       if (!isAuthorizedAdmin(userEmail)) {
         await signOut(auth);
-        setErrorMsg(`Access Denied: ${userEmail} is not an authorized administrator. Database access blocked.`);
+        setErrorMsg('Access Denied: This account is not authorized for operations control access.');
         setIsLoading(false);
         return;
       }
@@ -154,7 +154,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
             <input
               type="email"
               required
-              placeholder="admin@silenvault.com"
+              placeholder="name@organization.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 focus:border-rose-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
@@ -219,8 +219,8 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
         </button>
 
         <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
-          <p className="text-[11px] text-slate-500">
-            Strict Gate: Only <span className="text-slate-400 font-mono">mabhishekramesh1@gmail.com</span> or <span className="text-slate-400 font-mono">@silenvault.com</span> are permitted.
+          <p className="text-[11px] text-slate-500 select-none">
+            Restricted System • Authorized Personnel Only
           </p>
         </div>
       </div>

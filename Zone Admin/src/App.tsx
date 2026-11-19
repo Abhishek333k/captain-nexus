@@ -367,7 +367,7 @@ export default function AdminApp() {
                 Rapido Operations
               </h2>
               <p className="text-xs text-slate-400 leading-relaxed mb-6">
-                Manage 95 operating cities, verified city offices, service categories (Bike, Auto, Cab), and custom service boundaries.
+                Manage operating cities, verified city offices, service categories (Bike, Auto, Cab), and custom service boundaries.
               </p>
 
               <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">

@@ -6,6 +6,7 @@ import {
   Circle,
   Polygon,
   Popup,
+  Tooltip,
   GeoJSON,
   useMap
 } from 'react-leaflet';
@@ -77,9 +78,10 @@ const createCustomIcon = (bgColor: string, symbol: string) => {
 };
 
 const cityIcon = createCustomIcon('#F9C80E', 'R');
+const inactiveCityIcon = createCustomIcon('#64748B', '•');
 const registeredOfficeIcon = createCustomIcon('#8B5CF6', '🏛️');
 const corporateCampusIcon = createCustomIcon('#10B981', '🏬');
-const searchLocationIcon = createCustomIcon('#EF4444', '🎯');
+const searchLocationIcon = createCustomIcon('#EF4444', '📍');
 
 function MapViewController({
   searchCenter,
@@ -125,7 +127,7 @@ export const MapView: React.FC<MapProps> = ({
   onSelectOffice,
   showSurgeHexagons = false,
   showCityPins = true,
-  showOfficePins = true,
+  showOfficePins = false,
   activeCityBoundary = null,
   selectedCityName = null,
   isCaptainInsideBoundary = false
@@ -142,6 +144,12 @@ export const MapView: React.FC<MapProps> = ({
 
   const getOfficeIcon = (type: CityOffice['type']) => {
     return type === 'registered_office' ? registeredOfficeIcon : corporateCampusIcon;
+  };
+
+  const copyToClipboard = (text: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    }
   };
 
   return (
@@ -173,26 +181,42 @@ export const MapView: React.FC<MapProps> = ({
           />
         )}
 
+        {/* Searched / Reference Location */}
         {searchCenter && (
           <>
             <Marker position={searchCenter} icon={searchLocationIcon}>
               <Popup>
-                <div className="text-xs text-slate-800">
-                  <span className="font-bold block text-sm text-rose-700">Target Reference Point</span>
-                  {searchedLocation?.name}
+                <div className="text-xs text-slate-800 p-1 select-text">
+                  <div className="flex items-center justify-between gap-2 mb-1 border-b border-slate-200 pb-1">
+                    <span className="font-bold text-xs text-rose-600 select-text cursor-text">
+                      📍 {searchedLocation?.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => searchedLocation?.name && copyToClipboard(searchedLocation.name)}
+                      className="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-semibold cursor-pointer shrink-0"
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono select-text cursor-text">
+                    Lat: {searchCenter[0].toFixed(4)}, Lng: {searchCenter[1].toFixed(4)}
+                  </div>
+                  <p className="mt-1 text-slate-600 text-[11px] select-text">
+                    Reference point for distance calculations to nearest servicing hubs.
+                  </p>
                 </div>
               </Popup>
             </Marker>
-
             <Circle
               center={searchCenter}
               radius={radiusKm * 1000}
               pathOptions={{
-                color: '#F59E0B',
-                fillColor: '#FBBF24',
-                fillOpacity: 0.15,
-                weight: 2,
-                dashArray: '6, 6'
+                color: '#EF4444',
+                fillColor: '#EF4444',
+                fillOpacity: 0.08,
+                weight: 1.5,
+                dashArray: '4, 4'
               }}
             />
           </>
@@ -220,50 +244,114 @@ export const MapView: React.FC<MapProps> = ({
 
                 <Marker
                   position={[city.lat, city.lng]}
-                  icon={cityIcon}
+                  icon={city.active ? cityIcon : inactiveCityIcon}
                   eventHandlers={{
                     click: () => onSelectCity?.(city)
                   }}
                 >
-                  <Popup>
-                    <div className="text-slate-900 text-xs p-1">
-                      <div className="flex items-center space-x-1 mb-1">
-                        <span className="bg-amber-400 text-slate-950 px-1 py-0.2 rounded font-bold text-[9px] uppercase">
-                          Operational Hub
-                        </span>
-                        <div className="font-bold text-sm text-amber-800">{city.name}</div>
-                      </div>
-                      <div className="text-slate-500 font-medium mb-1">{city.state}</div>
+                  {/* Google Maps-style on-map city label */}
+                  <Tooltip
+                    direction="top"
+                    offset={[0, -28]}
+                    opacity={0.95}
+                    className="city-map-tooltip"
+                  >
+                    <span className="select-text cursor-text">
+                      {city.name} {!city.active && '(Inactive)'}
+                    </span>
+                  </Tooltip>
 
-                      {city.address && (
-                        <div className="my-1.5 p-1.5 bg-amber-50 rounded border border-amber-200 text-[11px] leading-tight">
-                          <div className="font-bold text-[10px] text-amber-900 flex items-center space-x-1">
-                            <span>🏢</span>
-                            <span>City Office:</span>
+                  <Popup>
+                    <div className="text-slate-900 text-xs p-1 min-w-[210px] max-w-[280px] select-text">
+                      {/* Header with Copy Action */}
+                      <div className="flex items-start justify-between gap-1.5 mb-1.5 pb-1 border-b border-slate-200">
+                        <div>
+                          <span className={`px-1.5 py-0.2 rounded font-bold text-[9px] uppercase tracking-wider inline-block mb-0.5 ${
+                            city.active ? 'bg-amber-400 text-slate-950' : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            {city.active ? 'Operational Hub' : 'Inactive Service Zone'}
+                          </span>
+                          <div className="font-bold text-sm text-slate-900 select-text cursor-text leading-tight">
+                            {city.name}
                           </div>
-                          <div className="text-slate-700 mt-0.5">{city.address}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(city.name)}
+                          title="Copy city name"
+                          className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-semibold cursor-pointer shrink-0"
+                        >
+                          📋 Copy
+                        </button>
+                      </div>
+
+                      <div className="text-slate-600 font-medium mb-1 select-text cursor-text">
+                        State: <span className="font-bold text-slate-800">{city.state}</span>
+                      </div>
+
+                      {/* Physical Office Address */}
+                      {city.address && (
+                        <div className="my-1.5 p-2 bg-amber-50 rounded-lg border border-amber-200 text-[11px] leading-tight select-text cursor-text">
+                          <div className="font-bold text-[10px] text-amber-900 flex items-center justify-between mb-1">
+                            <span className="flex items-center space-x-1">
+                              <span>🏢</span>
+                              <span>City Office:</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(`${city.address}${city.pincode ? ` PIN: ${city.pincode}` : ''}`)}
+                              title="Copy address"
+                              className="text-[9px] bg-amber-100 hover:bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 font-medium cursor-pointer"
+                            >
+                              📋 Copy Address
+                            </button>
+                          </div>
+                          <div className="text-slate-800 select-text leading-snug">{city.address}</div>
                           {city.pincode && (
-                            <div className="text-[10px] text-slate-500 font-mono mt-0.5">PIN: {city.pincode}</div>
+                            <div className="text-[10px] text-slate-600 font-mono mt-1 select-text">PIN: {city.pincode}</div>
                           )}
                           {city.landmarkNote && (
-                            <div className="text-[10px] text-amber-800 italic mt-0.5">📍 {city.landmarkNote}</div>
+                            <div className="text-[10px] text-amber-800 italic mt-1 select-text">📍 {city.landmarkNote}</div>
                           )}
                         </div>
                       )}
+
+                      {/* Coordinates */}
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono my-1 pt-1 border-t border-slate-100 select-text cursor-text">
+                        <span>{city.lat.toFixed(4)}, {city.lng.toFixed(4)}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(`${city.lat}, ${city.lng}`)}
+                          className="text-[9px] text-slate-600 hover:text-slate-900 underline font-sans cursor-pointer"
+                        >
+                          Copy Coords
+                        </button>
+                      </div>
+
+                      {/* Distance status */}
                       {city.distance !== undefined && (
-                        <div className="font-semibold text-slate-700 mb-1">
+                        <div className="font-semibold text-slate-700 my-1 text-[11px] select-text">
                           Road Distance:{' '}
                           <span className={isInside ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
                             {city.distance} km
                           </span>{' '}
-                          {isInside ? 'Eligible' : 'Out of range'}
+                          <span className="text-[10px] font-normal">
+                            ({isInside ? 'Eligible' : 'Out of range'})
+                          </span>
                         </div>
                       )}
-                      <div className="flex flex-wrap gap-1 mt-1">
+
+                      {city.notes && (
+                        <div className="text-[10px] text-slate-600 italic mt-1 select-text">
+                          Note: {city.notes}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-1 mt-1.5">
                         {city.services.map((svc) => (
                           <span
                             key={svc}
-                            className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold"
+                            className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold select-text"
                           >
                             {svc.replace('_', ' ')}
                           </span>
@@ -289,23 +377,56 @@ export const MapView: React.FC<MapProps> = ({
                   click: () => onSelectOffice?.(office)
                 }}
               >
+                <Tooltip
+                  direction="top"
+                  offset={[0, -28]}
+                  opacity={0.95}
+                  className="city-map-tooltip"
+                >
+                  <span className="select-text cursor-text">{office.name}</span>
+                </Tooltip>
+
                 <Popup>
-                  <div className="text-slate-900 text-xs p-1 max-w-[240px]">
-                    <div className="flex items-center space-x-1.5 mb-1">
-                      <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">
-                        {office.type.replace('_', ' ')}
-                      </span>
-                      <span className="font-bold text-sm text-blue-950 truncate">{office.name}</span>
+                  <div className="text-slate-900 text-xs p-1 max-w-[260px] select-text">
+                    <div className="flex items-start justify-between gap-1.5 mb-1 pb-1 border-b border-slate-200">
+                      <div>
+                        <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase inline-block mb-0.5">
+                          {office.type.replace('_', ' ')}
+                        </span>
+                        <div className="font-bold text-sm text-blue-950 select-text cursor-text leading-tight">
+                          {office.name}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(office.name)}
+                        className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-semibold cursor-pointer shrink-0"
+                      >
+                        📋 Copy
+                      </button>
                     </div>
-                    <div className="text-slate-700 text-[11px] mb-1 leading-snug">{office.address}</div>
-                    <div className="text-slate-500 text-[10px] font-medium mb-1">
-                      PIN: {office.pincode} • Timing: {office.timing}
+
+                    <div className="text-slate-700 text-[11px] mb-1 leading-snug select-text cursor-text">
+                      {office.address}
                     </div>
+
+                    <div className="flex items-center justify-between text-slate-500 text-[10px] font-medium mb-1 select-text">
+                      <span>PIN: {office.pincode} • Timing: {office.timing}</span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(`${office.address} PIN: ${office.pincode}`)}
+                        className="text-[9px] text-blue-600 hover:text-blue-900 underline cursor-pointer"
+                      >
+                        Copy Address
+                      </button>
+                    </div>
+
                     <div className="text-[9px] text-emerald-700 font-semibold mb-1">
                       ✓ Verified Office Location
                     </div>
+
                     {office.distance !== undefined && (
-                      <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1">
+                      <div className="font-bold text-slate-800 text-xs mt-1 border-t border-slate-200 pt-1 select-text">
                         Road Distance: <span className={isNearby ? 'text-emerald-700 font-bold' : 'text-blue-700'}>{office.distance} km</span>
                       </div>
                     )}

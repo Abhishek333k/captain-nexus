@@ -48,3 +48,31 @@ html, body, #root {
   width: 0 !important;
   overflow: hidden !important;
 }
+
+/* Enable text selection for city names, popups, and detail cards (like Google Maps) */
+.leaflet-popup-content,
+.leaflet-popup-content *,
+.leaflet-tooltip,
+.leaflet-tooltip *,
+.select-text,
+.city-detail-text {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  cursor: text;
+}
+
+/* Tooltip styling for city names directly on map */
+.city-map-tooltip {
+  background-color: #0b0d10 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 6px !important;
+  padding: 3px 7px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.city-map-tooltip::before {
+  border-bottom-color: #0b0d10 !important;
+}

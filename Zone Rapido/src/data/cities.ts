@@ -18,7 +18,7 @@ export interface City {
 export type ServiceType = 'bike' | 'auto' | 'cab' | 'b2b' | 'e_rickshaw' | 'tuk_tuk';
 
 /**
- * 95 Official Rapido Servicing Cities sourced directly from rapido.bike production sitemap.
+ * Official Rapido Servicing Cities sourced directly from rapido.bike production sitemap.
  * Easily editable by adding or removing entries.
  */
 export const RAPIDO_OFFICIAL_CITIES: City[] = [
@@ -50,7 +50,7 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'bhopal', name: 'Bhopal', state: 'Madhya Pradesh', lat: 23.2599, lng: 77.4126, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'bhubaneswar', name: 'Bhubaneswar', state: 'Odisha', lat: 20.2961, lng: 85.8245, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'bikaner', name: 'Bikaner', state: 'Rajasthan', lat: 28.0229, lng: 73.3119, services: ['bike', 'auto'], active: true },
-  { id: 'bilaspur', name: 'Bilaspur', state: 'Chhattisgarh', lat: 22.0797, lng: 82.1409, services: ['bike', 'auto'], active: true },
+  { id: 'bilaspur', name: 'Bilaspur (Chhattisgarh)', state: 'Chhattisgarh', lat: 22.0797, lng: 82.1409, services: ['bike', 'auto'], active: true },
   { id: 'bokaro', name: 'Bokaro Steel City', state: 'Jharkhand', lat: 23.6693, lng: 86.1511, services: ['bike', 'auto'], active: true },
   { id: 'chandigarh', name: 'Chandigarh Tri-City', state: 'Chandigarh', lat: 30.7333, lng: 76.7794, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'chennai', name: 'Chennai', state: 'Tamil Nadu', lat: 13.0827, lng: 80.2707, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
@@ -152,5 +152,8 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'varanasi', name: 'Varanasi', state: 'Uttar Pradesh', lat: 25.3176, lng: 82.9739, services: ['bike', 'auto', 'e_rickshaw', 'tuk_tuk'], active: true },
   { id: 'vijayawada', name: 'Vijayawada', state: 'Andhra Pradesh', lat: 16.5062, lng: 80.6480, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'vishakapatnam', name: 'Visakhapatnam', state: 'Andhra Pradesh', lat: 17.6868, lng: 83.2185, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
-  { id: 'warangal', name: 'Warangal', state: 'Telangana', lat: 17.9689, lng: 79.5941, services: ['bike', 'auto', 'b2b'], active: true }
+  { id: 'warangal', name: 'Warangal', state: 'Telangana', lat: 17.9689, lng: 79.5941, services: ['bike', 'auto', 'b2b'], active: true },
+  { id: 'tadepalli', name: 'Tadepalli (Guntur)', state: 'Andhra Pradesh', lat: 16.4815, lng: 80.6050, services: ['bike', 'auto'], active: false, notes: 'Sub-district / Municipality adjacent to Vijayawada & Guntur hubs' },
+  { id: 'narayanpet', name: 'Narayanpet (Telangana)', state: 'Telangana', lat: 16.7324, lng: 77.4984, services: ['bike', 'auto'], active: false, notes: 'District headquarters (Nearest active operating hub: Mahbubnagar / Hyderabad)' },
+  { id: 'parvathipuram', name: 'Parvathipuram (Andhra Pradesh)', state: 'Andhra Pradesh', lat: 18.7758, lng: 83.4278, services: ['bike', 'auto'], active: false, notes: 'District headquarters (Nearest active operating hub: Vizianagaram / Visakhapatnam)' }
 ];
