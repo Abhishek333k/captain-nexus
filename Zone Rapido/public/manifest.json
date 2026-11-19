@@ -1,0 +1,19 @@
+{
+  "short_name": "Rapido Directory",
+  "name": "Rapido Operating Cities & Office Directory",
+  "description": "Find active Rapido operating cities, service boundary maps, physical city office addresses, and road commute distances.",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "display": "standalone",
+  "orientation": "portrait-primary"
+}
+

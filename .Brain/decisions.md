@@ -60,24 +60,25 @@
    - Solved ambiguous names (e.g., Tadepalli, Narayanpet, Parvathipuram, Bilaspur) by parsing Nominatim `county` (District) and `state` details.
    - Titles are qualified with `(District, State)`, and debounced requests employ `AbortController` and 5s timeouts (complying with performance rules).
 
+14. **Community Discrepancy & Address Reporting Pipeline (Implemented)**:
+   - Built `ReportDiscrepancyModal.tsx` in `Zone Rapido` allowing public commuters and captains to suggest moved office addresses, new operating hubs, or boundary shifts directly into Cloud Firestore (`/feedback_reports`).
+   - Built `FeedbackReportsTab.tsx` in `Zone Admin` allowing administrators to triage, review, and 1-click apply reported addresses directly into `/cities` documents or dismiss them.
+   - Deployed updated `firestore.rules` allowing public creation of reports with schema string validation, and admin-only management.
+15. **Performance, Skeletons, and Network Guardrails (Implemented)**:
+   - Built `CityCardSkeleton.tsx` for animated skeleton states during search and distance calculations (Rules 1 & 15 of `vibe-codded app rules.txt`).
+   - Injected in-memory `Map` caching (`sessionBoundaryCache`, `roadDistanceCache`) and 5-6 second `AbortController` timeouts on all external Nominatim and OSRM API calls to prevent UI thread lockups and duplicate requests (Rules 3 & 13).
+   - Created Web App Manifests (`manifest.json`) in `Zone Rapido` and `Zone Taxi Home` configured for `standalone` display mode, meeting Capacitor and Google Play standards.
+   - Sanitized admin header user display (`Authenticated Session`) to prevent personal email leaks in screenshots or production recordings.
+
 ---
 
-## 3. Catalog of Future Features & Parked Suggestions (From Chat History)
+## 3. Catalog of Parked Suggestions & Future Fleet Expansions
 
-1. **Public Discrepancy & Office Update Reporting Pipe**:
-   - Allow commuters and captains on `Zone Rapido` to flag relocated office addresses or expanded boundaries directly into Firestore (`/feedback_reports`).
-   - Triaged and approved with 1-click in `Zone Admin`.
-2. **Pre-computed Edge-Cached TopoJSON / Municipal Boundaries**:
-   - Pre-download and compress boundary polygons for all 95 cities into Cloud Storage / CDN to eliminate Nominatim rate limits and latency.
-3. **Offline PWA Support**:
-   - Service worker with cache-first strategy for the 95-city directory and base map tiles, enabling offline lookups in network-dead zones.
-4. **Multi-Fleet Support (Uber India & Ola Cabs)**:
+1. **Pre-computed Edge-Cached TopoJSON / Municipal Boundaries**:
+   - Pre-download and compress boundary polygons for all operating cities into Cloud Storage / CDN to eliminate Nominatim external rate limits.
+2. **Offline Service Worker / PWA Caching**:
+   - Full service worker with cache-first strategy for city directory and base map tiles, enabling offline lookups in network-dead zones.
+3. **Multi-Fleet Dataset Activation (Uber India & Ola Cabs)**:
    - Dedicated Firestore collections (`/uber_cities`, `/ola_cities`) and datasets to activate the pending fleet cards in `Zone Admin` and `Zone Taxi Home`.
-5. **Web Worker Spatial Offloading (`geoWorker.ts`)**:
-   - Move ray-casting point-in-polygon checks and Haversine matrix sorting into a Web Worker to ensure 60 FPS performance on lower-end mobile devices.
-6. **Minimal Non-Intrusive Ad / Sponsor Slot**:
-   - Non-intrusive ad placeholder card at the end of the city directory list (no popups).
-7. **SEO & OpenGraph Metadata**:
-   - Dynamic meta tags, OpenGraph previews, and JSON-LD schema (`Place`, `LocalBusiness`) for Indian city office queries on Google.
-8. **Dynamic Commute Limit Slider**:
-   - Replace the fixed 30km range with a dynamic slider (15km - 50km) per city tier.
+4. **Web Worker Spatial Offloading (`geoWorker.ts`)**:
+   - Move ray-casting point-in-polygon checks and Haversine matrix sorting into a dedicated Web Worker for 60 FPS performance on lower-tier mobile chipsets.

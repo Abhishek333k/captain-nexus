@@ -12,22 +12,31 @@ export interface CityBoundary {
 }
 
 const CACHE_KEY_PREFIX = 'captain_nexus_boundary_';
+const sessionBoundaryCache = new Map<string, any>();
 
 export async function fetchCityBoundary(cityId: string, cityName: string, stateName: string): Promise<any> {
   const normalizedId = (cityId || cityName).toLowerCase().trim().replace(/[^a-z0-9]+/g, '_');
   const cacheKey = `${CACHE_KEY_PREFIX}${normalizedId}`;
 
-  // 1. Check precomputed boundaries first for instant zero-latency accuracy
-  if (PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId]) {
-    return PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId];
+  // 1. Check in-memory session cache first (zero CPU/I/O latency)
+  if (sessionBoundaryCache.has(normalizedId)) {
+    return sessionBoundaryCache.get(normalizedId);
   }
 
-  // 2. Check localStorage cache for high-res boundary
+  // 2. Check precomputed boundaries first for instant zero-latency accuracy
+  if (PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId]) {
+    const precomputed = PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId];
+    sessionBoundaryCache.set(normalizedId, precomputed);
+    return precomputed;
+  }
+
+  // 3. Check localStorage cache for high-res boundary
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const parsed: CityBoundary = JSON.parse(cached);
       if (Date.now() - parsed.cachedAt < 30 * 24 * 60 * 60 * 1000) {
+        sessionBoundaryCache.set(normalizedId, parsed.geojson);
         return parsed.geojson;
       }
     }
@@ -35,7 +44,7 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
     // Local storage unavailable
   }
 
-  // 3. Query OpenStreetMap Nominatim for official boundary polygon
+  // 4. Query OpenStreetMap Nominatim for official boundary polygon with 5s timeout
   const cleanName = cityName.split('(')[0].trim();
   const searchQueries = [
     `${cleanName} Municipal Corporation, ${stateName}, India`,
@@ -45,11 +54,17 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
   ];
 
   for (const query of searchQueries) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&limit=1&q=${encodeURIComponent(
         query
       )}`;
-      const res = await fetch(url, { headers: { 'User-Agent': 'CaptainNexus/1.0' } });
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'CaptainNexus/1.0' }
+      });
+      clearTimeout(timeoutId);
       const data = await res.json();
       if (
         Array.isArray(data) &&
@@ -57,6 +72,7 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
         (data[0].geojson.type === 'Polygon' || data[0].geojson.type === 'MultiPolygon')
       ) {
         const geojson = data[0].geojson;
+        sessionBoundaryCache.set(normalizedId, geojson);
         try {
           localStorage.setItem(
             cacheKey,
@@ -72,12 +88,17 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
         return geojson;
       }
     } catch {
+      clearTimeout(timeoutId);
       // Continue to next query variant
     }
   }
 
-  // 3. Fallback: Always return instant precomputed boundary for the city
-  return PRECOMPUTED_CITY_BOUNDARIES[cityId] || null;
+  // 5. Fallback: Always return instant precomputed boundary for the city if exists
+  const fallback = PRECOMPUTED_CITY_BOUNDARIES[cityId] || null;
+  if (fallback) {
+    sessionBoundaryCache.set(normalizedId, fallback);
+  }
+  return fallback;
 }
 
 /**

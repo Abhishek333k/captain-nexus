@@ -5,6 +5,7 @@ import { auth, db } from './firebase';
 import { AdminLogin } from './components/AdminLogin';
 import { CityEditModal } from './components/CityEditModal';
 import { OfficePayloadModal } from './components/OfficePayloadModal';
+import { FeedbackReportsTab } from './components/FeedbackReportsTab';
 import { RAPIDO_OFFICIAL_CITIES, City } from '../../Zone Rapido/src/data/cities';
 import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../Zone Rapido/src/data/offices';
 
@@ -38,7 +39,7 @@ export default function AdminApp() {
     return null;
   });
 
-  const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries'>('cities');
+  const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries' | 'reports'>('cities');
   const [cities, setCities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices, setOffices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
   const [citySearchFilter, setCitySearchFilter] = useState('');
@@ -306,7 +307,7 @@ export default function AdminApp() {
                 Zone Admin
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate max-w-[160px] sm:max-w-none">admin.taxi.silenvault.com • {currentUser.email}</p>
+            <p className="text-[10px] text-slate-400 truncate max-w-[160px] sm:max-w-none">admin.taxi.silenvault.com • Authenticated Session</p>
           </div>
         </div>
 
@@ -473,6 +474,14 @@ export default function AdminApp() {
                 }`}
               >
                 Boundaries
+              </button>
+              <button
+                onClick={() => setActiveTab('reports')}
+                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'reports' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Community Reports
               </button>
             </div>
           </div>
@@ -845,6 +854,16 @@ export default function AdminApp() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 4: COMMUNITY DISCREPANCY & OFFICE REPORTS */}
+          {activeTab === 'reports' && (
+            <FeedbackReportsTab
+              cities={cities}
+              onCityUpdated={(updated) => {
+                setCities((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+              }}
+            />
           )}
         </div>
       )}

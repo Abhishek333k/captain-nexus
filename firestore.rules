@@ -9,22 +9,34 @@ service cloud.firestore {
          request.auth.token.email.matches('.*@silenvault[.]com$'));
     }
 
-    // Operating Cities Collection: Public read for Zone A, Admin-only write for Zone B
+    // Operating Cities Collection: Public read, Admin-only write
     match /cities/{cityId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Statutory Offices Collection: Public read for Zone A, Admin-only write for Zone B
+    // Statutory Offices Collection: Public read, Admin-only write
     match /offices/{officeId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Custom Boundary Overrides Collection: Public read for Zone A, Admin-only write for Zone B
+    // Custom Boundary Overrides Collection: Public read, Admin-only write
     match /boundaries/{boundaryId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Community Discrepancy & Office Reports: Public create with validation, Admin-only manage
+    match /feedback_reports/{reportId} {
+      allow create: if request.resource.data.cityName is string
+                    && request.resource.data.cityName.size() > 0;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Dropbox Staged Payloads: Admin-only
+    match /dropbox_payloads/{payloadId} {
+      allow read, write: if isAdmin();
     }
 
     // Default catch-all rule: Deny all unmatched writes

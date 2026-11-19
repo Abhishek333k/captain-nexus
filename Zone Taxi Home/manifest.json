@@ -1,0 +1,11 @@
+{
+  "short_name": "SilenVault Mobility",
+  "name": "SilenVault Mobility Transit & Fleet Directory",
+  "description": "Public operations directory for Indian mobility networks. Find operating zones, city offices, service boundaries, and commute distances.",
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "display": "standalone",
+  "orientation": "portrait-primary"
+}
+
