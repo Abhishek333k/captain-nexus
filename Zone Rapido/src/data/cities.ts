@@ -390,7 +390,7 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'vijayawada', name: 'Vijayawada', state: 'Andhra Pradesh', lat: 16.5062, lng: 80.6480, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'vishakapatnam', name: 'Visakhapatnam', state: 'Andhra Pradesh', lat: 17.6868, lng: 83.2185, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
   { id: 'warangal', name: 'Warangal', state: 'Telangana', lat: 17.9689, lng: 79.5941, services: ['bike', 'auto', 'b2b'], active: true },
-  { id: 'tadepalli', name: 'Tadepalli (Guntur)', state: 'Andhra Pradesh', lat: 16.4815, lng: 80.6050, services: ['bike', 'auto'], active: false, notes: 'Sub-district / Municipality adjacent to Vijayawada & Guntur hubs' },
-  { id: 'narayanpet', name: 'Narayanpet (Telangana)', state: 'Telangana', lat: 16.7324, lng: 77.4984, services: ['bike', 'auto'], active: false, notes: 'District headquarters (Nearest active operating hub: Mahbubnagar / Hyderabad)' },
-  { id: 'parvathipuram', name: 'Parvathipuram (Andhra Pradesh)', state: 'Andhra Pradesh', lat: 18.7758, lng: 83.4278, services: ['bike', 'auto'], active: false, notes: 'District headquarters (Nearest active operating hub: Vizianagaram / Visakhapatnam)' }
+  { id: 'tadepalli', name: 'Tadepalli (Guntur)', state: 'Andhra Pradesh', lat: 16.4815, lng: 80.6050, services: ['bike', 'auto'], active: true, notes: 'Sub-district / Municipality adjacent to Vijayawada & Guntur hubs' },
+  { id: 'narayanpet', name: 'Narayanpet (Telangana)', state: 'Telangana', lat: 16.7324, lng: 77.4984, services: ['bike', 'auto'], active: true, notes: 'District headquarters (Nearest active operating hub: Mahbubnagar / Hyderabad)' },
+  { id: 'parvathipuram', name: 'Parvathipuram (Andhra Pradesh)', state: 'Andhra Pradesh', lat: 18.7758, lng: 83.4278, services: ['bike', 'auto'], active: true, notes: 'District headquarters (Nearest active operating hub: Vizianagaram / Visakhapatnam)' }
 ];

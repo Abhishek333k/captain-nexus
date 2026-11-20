@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { City } from '../../../Zone Rapido/src/data/cities';
 
@@ -46,7 +46,27 @@ export const FeedbackReportsTab: React.FC<FeedbackReportsTabProps> = ({ cities, 
   };
 
   useEffect(() => {
-    fetchReports();
+    setIsLoading(true);
+    const unsub = onSnapshot(
+      collection(db, 'feedback_reports'),
+      (snap) => {
+        const list: FeedbackReport[] = [];
+        snap.forEach((d) => {
+          list.push({ id: d.id, ...d.data() } as FeedbackReport);
+        });
+        list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        setReports(list);
+        setIsLoading(false);
+      },
+      (err: any) => {
+        console.error('Failed to listen to feedback reports:', err);
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      unsub();
+    };
   }, []);
 
   const showFeedback = (text: string, type: 'success' | 'error') => {

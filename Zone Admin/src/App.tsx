@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { AdminLogin } from './components/AdminLogin';
 import { CityEditModal } from './components/CityEditModal';
@@ -62,6 +62,10 @@ export default function AdminApp() {
   const [newCityAddress, setNewCityAddress] = useState('');
   const [newCityLandmark, setNewCityLandmark] = useState('');
   const [newCityPincode, setNewCityPincode] = useState('');
+  const [isAddingCity, setIsAddingCity] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [addCityFeedback, setAddCityFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [pendingReportsCount, setPendingReportsCount] = useState<number>(0);
 
   // Office inline edit
   const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
@@ -117,47 +121,74 @@ export default function AdminApp() {
     await signOut(auth);
   };
 
-  // Load and merge cities from Firestore & LocalStorage
+  // Realtime synchronization for operating cities and offline cache merge
   useEffect(() => {
-    const loadCities = async () => {
-      const mergedMap = new Map<string, City>();
-      // 1. Official default cities
-      RAPIDO_OFFICIAL_CITIES.forEach((c) => mergedMap.set(c.id, { ...c }));
-
-      // 2. LocalStorage offline cache
-      try {
-        const local = localStorage.getItem(CITIES_STORAGE_KEY);
-        if (local) {
-          const parsed = JSON.parse(local) as City[];
-          parsed.forEach((c) => {
-            const existing = mergedMap.get(c.id);
-            mergedMap.set(c.id, existing ? { ...existing, ...c } : c);
-          });
-        }
-      } catch (err) {
-        console.warn('Failed to parse local cities cache:', err);
+    // 1. Initial offline cache read
+    const mergedMap = new Map<string, City>();
+    RAPIDO_OFFICIAL_CITIES.forEach((c) => mergedMap.set(c.id, { ...c }));
+    try {
+      const local = localStorage.getItem(CITIES_STORAGE_KEY);
+      if (local) {
+        const parsed = JSON.parse(local) as City[];
+        parsed.forEach((c) => {
+          const existing = mergedMap.get(c.id);
+          mergedMap.set(c.id, existing ? { ...existing, ...c } : c);
+        });
       }
+    } catch (err) {
+      console.warn('Failed to parse local cities cache:', err);
+    }
+    setCities(Array.from(mergedMap.values()));
 
-      // 3. Firestore /cities collection
-      try {
-        const snap = await getDocs(collection(db, 'cities'));
+    // 2. Realtime listener from Firestore
+    const unsub = onSnapshot(
+      collection(db, 'cities'),
+      (snap) => {
         if (!snap.empty) {
+          const liveMap = new Map<string, City>();
+          RAPIDO_OFFICIAL_CITIES.forEach((c) => liveMap.set(c.id, { ...c }));
           snap.forEach((docSnap) => {
             const data = docSnap.data() as City;
-            const existing = mergedMap.get(docSnap.id);
-            mergedMap.set(docSnap.id, existing ? { ...existing, ...data, id: docSnap.id } : { ...data, id: docSnap.id });
+            const existing = liveMap.get(docSnap.id);
+            liveMap.set(docSnap.id, existing ? { ...existing, ...data, id: docSnap.id } : { ...data, id: docSnap.id });
           });
-          // Cache merged result
-          localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(Array.from(mergedMap.values())));
+          const merged = Array.from(liveMap.values());
+          setCities(merged);
+          try {
+            localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(merged));
+          } catch {}
         }
-      } catch (err) {
-        console.warn('Firestore cities fetch fallback:', err);
+      },
+      (err) => {
+        console.warn('Firestore cities realtime listener error:', err);
       }
+    );
 
-      setCities(Array.from(mergedMap.values()));
+    return () => {
+      unsub();
     };
+  }, []);
 
-    loadCities();
+  // Realtime listener for pending community feedback reports
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, 'feedback_reports'),
+      (snap) => {
+        let count = 0;
+        snap.forEach((d) => {
+          const data = d.data();
+          if (data?.status === 'pending') count++;
+        });
+        setPendingReportsCount(count);
+      },
+      (err) => {
+        console.warn('Reports counter realtime error:', err);
+      }
+    );
+
+    return () => {
+      unsub();
+    };
   }, []);
 
   const handleToggleCity = async (id: string) => {
@@ -201,16 +232,84 @@ export default function AdminApp() {
     }
   };
 
+  const handleAutoGeocode = async (cityNameOverride?: string, stateOverride?: string) => {
+    const queryCity = (cityNameOverride ?? newCityName).trim();
+    const queryState = (stateOverride ?? newCityState).trim();
+    if (!queryCity) {
+      setAddCityFeedback({ type: 'error', message: 'Please enter a City Name first to detect coordinates.' });
+      return null;
+    }
+    setIsGeocoding(true);
+    setAddCityFeedback(null);
+    try {
+      const query = `${queryCity}, ${queryState ? queryState + ', ' : ''}India`;
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`, {
+        headers: { 'Accept-Language': 'en' }
+      });
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat).toFixed(4);
+        const lng = parseFloat(data[0].lon).toFixed(4);
+        setNewCityLat(lat);
+        setNewCityLng(lng);
+        setAddCityFeedback({
+          type: 'success',
+          message: `Coordinates detected: ${lat}, ${lng} (${data[0].display_name.split(',')[0]})`
+        });
+        return { lat, lng };
+      } else {
+        setAddCityFeedback({
+          type: 'error',
+          message: `Could not auto-find coordinates for "${queryCity}". Please enter manually.`
+        });
+        return null;
+      }
+    } catch {
+      setAddCityFeedback({
+        type: 'error',
+        message: 'Geocoding request failed. Please enter coordinates manually.'
+      });
+      return null;
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
   const handleAddCity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCityName || !newCityLat || !newCityLng) return;
-    const newId = newCityName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    setAddCityFeedback(null);
+
+    const trimmedName = newCityName.trim();
+    if (!trimmedName) {
+      setAddCityFeedback({ type: 'error', message: 'City Name is required.' });
+      return;
+    }
+
+    let lat = newCityLat.trim();
+    let lng = newCityLng.trim();
+
+    // Auto-detect coordinates if left blank
+    if (!lat || !lng) {
+      const detected = await handleAutoGeocode(trimmedName, newCityState);
+      if (!detected) {
+        setAddCityFeedback({
+          type: 'error',
+          message: 'Latitude and Longitude are required. Please auto-detect or enter manually.'
+        });
+        return;
+      }
+      lat = detected.lat;
+      lng = detected.lng;
+    }
+
+    setIsAddingCity(true);
+    const newId = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     const item: City = {
       id: newId,
-      name: newCityName,
-      state: newCityState || 'India',
-      lat: parseFloat(newCityLat),
-      lng: parseFloat(newCityLng),
+      name: trimmedName,
+      state: newCityState.trim() || 'India',
+      lat: parseFloat(lat),
+      lng: parseFloat(lng),
       services: ['bike', 'auto', 'cab', 'b2b'],
       address: newCityAddress.trim() || undefined,
       landmarkNote: newCityLandmark.trim() || undefined,
@@ -218,27 +317,39 @@ export default function AdminApp() {
       active: true
     };
 
-    setCities((prev) => {
-      const next = [item, ...prev];
-      try {
-        localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-
     try {
       await setDoc(doc(db, 'cities', item.id), item);
-    } catch (err) {
-      console.error('Failed to save new city to Firestore:', err);
-    }
 
-    setNewCityName('');
-    setNewCityState('');
-    setNewCityLat('');
-    setNewCityLng('');
-    setNewCityAddress('');
-    setNewCityLandmark('');
-    setNewCityPincode('');
+      setCities((prev) => {
+        const exists = prev.some((c) => c.id === item.id);
+        const next = exists ? prev.map((c) => (c.id === item.id ? item : c)) : [item, ...prev];
+        try {
+          localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setAddCityFeedback({
+        type: 'success',
+        message: `✓ Successfully registered "${item.name}" into Rapido active network! Synced live.`
+      });
+
+      setNewCityName('');
+      setNewCityState('');
+      setNewCityLat('');
+      setNewCityLng('');
+      setNewCityAddress('');
+      setNewCityLandmark('');
+      setNewCityPincode('');
+    } catch (err: any) {
+      console.error('Failed to save new city to Firestore:', err);
+      setAddCityFeedback({
+        type: 'error',
+        message: `Failed to save city: ${err?.message || 'Check administrator credentials.'}`
+      });
+    } finally {
+      setIsAddingCity(false);
+    }
   };
 
   const handleSaveOfficeLandmark = (id: string) => {
@@ -312,7 +423,23 @@ export default function AdminApp() {
         </div>
 
         {/* Global Action & Sign Out */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <button
+            onClick={() => {
+              setSelectedFleet('rapido');
+              setActiveTab('reports');
+            }}
+            className="px-2.5 sm:px-3 py-1.5 text-xs rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-semibold transition-colors flex items-center space-x-1.5"
+            title="View community reports submitted from rapido.taxi"
+          >
+            <span>📢 Reports</span>
+            {pendingReportsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none animate-pulse">
+                {pendingReportsCount}
+              </span>
+            )}
+          </button>
+
           {selectedFleet && (
             <button
               onClick={() => navigateToFleet(null)}
@@ -423,6 +550,44 @@ export default function AdminApp() {
               </div>
             </div>
           </div>
+
+          {/* Quick Access to Community Feedback & Discrepancy Reports */}
+          <div
+            onClick={() => {
+              setSelectedFleet('rapido');
+              setActiveTab('reports');
+            }}
+            className="mt-6 p-4 rounded-2xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/15 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all group"
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className="w-11 h-11 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-300 flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform">
+                📢
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
+                    Community Discrepancy & Office Reports
+                  </h3>
+                  {pendingReportsCount > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-bold animate-pulse">
+                      {pendingReportsCount} Pending
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold">
+                      Up to date
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Review verified office moves, address updates, and boundary suggestions reported by users on rapido.taxi. 1-click apply to live directory.
+                </p>
+              </div>
+            </div>
+            <span className="text-purple-400 text-xs font-bold inline-flex items-center space-x-1 shrink-0 group-hover:translate-x-1 transition-transform">
+              <span>Open Reports Console</span>
+              <span>&rarr;</span>
+            </span>
+          </div>
         </main>
       ) : (
         /* ================= 2. RAPIDO HIGH-DENSITY OPERATIONS CONSOLE ================= */
@@ -477,11 +642,16 @@ export default function AdminApp() {
               </button>
               <button
                 onClick={() => setActiveTab('reports')}
-                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center space-x-1.5 ${
                   activeTab === 'reports' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Community Reports
+                <span>Community Reports</span>
+                {pendingReportsCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-bold">
+                    {pendingReportsCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -599,6 +769,19 @@ export default function AdminApp() {
                     Instantly expand Rapido's active directory. Newly registered cities automatically resolve routing and appear in the public portal.
                   </p>
 
+                  {addCityFeedback && (
+                    <div
+                      className={`mb-4 p-3 rounded-xl border text-xs font-medium leading-relaxed flex items-start space-x-2 ${
+                        addCityFeedback.type === 'success'
+                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                          : 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+                      }`}
+                    >
+                      <span className="font-bold">{addCityFeedback.type === 'success' ? '✓' : '⚠'}</span>
+                      <span>{addCityFeedback.message}</span>
+                    </div>
+                  )}
+
                   <form onSubmit={handleAddCity} className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1">City Name</label>
@@ -613,7 +796,18 @@ export default function AdminApp() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">State / Province</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-slate-300">State / Province</label>
+                        <button
+                          type="button"
+                          onClick={() => handleAutoGeocode()}
+                          disabled={isGeocoding || !newCityName.trim()}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center space-x-1 disabled:opacity-40"
+                          title="Query OpenStreetMap Nominatim for GPS decimal coordinates"
+                        >
+                          <span>{isGeocoding ? 'Detecting coordinates...' : '📍 Auto-Detect Coordinates'}</span>
+                        </button>
+                      </div>
                       <input
                         type="text"
                         required
@@ -630,8 +824,7 @@ export default function AdminApp() {
                         <input
                           type="number"
                           step="any"
-                          required
-                          placeholder="25.2425"
+                          placeholder="e.g. 25.2425"
                           value={newCityLat}
                           onChange={(e) => setNewCityLat(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
@@ -642,8 +835,7 @@ export default function AdminApp() {
                         <input
                           type="number"
                           step="any"
-                          required
-                          placeholder="86.9842"
+                          placeholder="e.g. 86.9842"
                           value={newCityLng}
                           onChange={(e) => setNewCityLng(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
@@ -693,9 +885,14 @@ export default function AdminApp() {
 
                     <button
                       type="submit"
-                      className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-xs transition-colors shadow-lg shadow-amber-400/20"
+                      disabled={isAddingCity || isGeocoding}
+                      className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-xs transition-colors shadow-lg shadow-amber-400/20 disabled:opacity-50"
                     >
-                      + Register City into Rapido Network
+                      {isAddingCity
+                        ? 'Registering & Publishing...'
+                        : isGeocoding
+                        ? 'Detecting GPS Coordinates...'
+                        : '+ Register City into Rapido Network'}
                     </button>
                   </form>
                 </div>

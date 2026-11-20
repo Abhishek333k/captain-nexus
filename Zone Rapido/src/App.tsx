@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import { City, ServiceType, RAPIDO_OFFICIAL_CITIES } from './data/cities';
 import { CityOffice, ROPPEN_STATUTORY_OFFICES } from './data/offices';
@@ -49,13 +49,12 @@ export function App() {
     return RAPIDO_OFFICIAL_CITIES;
   });
 
-  // Sync latest city updates & newly registered cities from Firestore
+  // Sync latest city updates & newly registered cities from Firestore in realtime
   useEffect(() => {
-    let isSubscribed = true;
-    const syncCities = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'cities'));
-        if (!snap.empty && isSubscribed) {
+    const unsub = onSnapshot(
+      collection(db, 'cities'),
+      (snap) => {
+        if (!snap.empty) {
           const map = new Map<string, City>();
           RAPIDO_OFFICIAL_CITIES.forEach((c) => map.set(c.id, { ...c }));
           snap.forEach((docSnap) => {
@@ -69,13 +68,14 @@ export function App() {
             localStorage.setItem('silenvault_rapido_cities_cache', JSON.stringify(merged));
           } catch {}
         }
-      } catch (err) {
+      },
+      (err) => {
         console.warn('Realtime cities sync fallback to static:', err);
       }
-    };
-    syncCities();
+    );
+
     return () => {
-      isSubscribed = false;
+      unsub();
     };
   }, []);
   const [offices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
