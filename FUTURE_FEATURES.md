@@ -4,17 +4,17 @@ This document tracks all planned, suggested, and parked features for the **Silen
 
 > [!NOTE]
 > **Current Project Status (as of November 2026)**:
-> All core map enhancements, selectable/copiable Google Maps-style text, location disambiguation, community feedback pipes, admin leak purges, and PWA manifests are fully built, deployed, and live on Firebase Hosting.
-> Active feature work on city offices is **on hold until verified physical address datasets are compiled and provided**.
+> All core map enhancements, selectable/copiable Google Maps-style text, location disambiguation, community feedback pipes, admin leak purges, PWA manifests, and **18 scavenged physical office addresses** are fully built, verified, deployed, and live on Firebase Hosting.
+> **Service Coverage Clarification**: Having a verified physical city office address vs. not having one does not indicate absence of service in that city. All operating cities retain full active transit coverage regardless of physical office listings.
 
 ---
 
-## 1. Primary Blocker: Physical Office Address Ingestion
+## 1. Physical Office Address Ingestion Progress
 
-| Item | Description | Current State | Action Required Once Data Arrives |
+| Item | Description | Current State | Action Required |
 | :--- | :--- | :--- | :--- |
-| **Complete City Office Addresses** | Verify and populate statutory branch office addresses, landmarks, and pin codes for all remaining operating cities. | City editor & database schema support physical `address`, `landmarkNote`, and `pincode`. Some cities have operational notes but lack exact addresses. | Batch ingest verified addresses into Cloud Firestore (`/cities`) or stage via Operations Cloud Dropbox in `Zone Admin`. |
-| **Office Geocoding Verification** | Map exact pinpoint lat/lng coordinates for newly added city offices so both city centroid and office markers show on the live map. | Implemented for core metros in `Zone Rapido/src/data/offices.ts`. | Add pinpoint coordinates for tier-2/tier-3 hubs once street addresses are verified. |
+| **Scavenged Vault Addresses (18 Hubs)** | Addresses for Agra, Ahmedabad, Aligarh, Amritsar, Anantapur, Asansol, Bengaluru (HSR & HQ), Bareilly, Bhopal, Bhubaneswar, Bilaspur, Chandigarh, Chennai, Coimbatore, Dehradun, Delhi NCR (Kotla Mubarakpur, Noida Sec 6, Gurugram Sec 30). | **Integrated & Live**: Populated in `cities.ts` and `offices.ts` with pinpoint coordinates, landmarks, pin codes, and driving distance routing. | Maintain real-time sync with field reports. |
+| **Remaining Tier-2/Tier-3 Operating Hubs** | Verify and populate statutory branch office addresses, landmarks, and pin codes for remaining active cities. | Cities retain active operational service status (`active: true`), bike/auto/cab services, and boundary routing without physical address display. | Ingest remaining addresses into Admin Dropbox as ground data arrives. |
 
 ---
 
@@ -83,3 +83,4 @@ This document tracks all planned, suggested, and parked features for the **Silen
   - Non-intrusive ad placeholder cell (`<AdBanner />`) is already positioned after the scrollable list container, invisible until configured.
   - Once Google AdSense account approval is confirmed, input the publisher client ID (`data-ad-client`) and ad slot ID (`data-ad-slot`) into `AdBanner.tsx`.
   - Strictly adhere to Better Ads Standards: no timed popups or blocking overlays.
+
