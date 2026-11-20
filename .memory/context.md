@@ -37,3 +37,9 @@ Captains and commuters applying or searching from rural, peripheral, or unmapped
   - Direct modal for updating city names, physical office addresses, landmarks, pin codes, coordinates, notes, services, and active toggles.
 - **Operations Cloud Dropbox**:
   - Persistent staging vault for raw spreadsheets and statutory exports in Firestore.
+
+---
+
+## 4. Backlog & Blocked Items
+- **Current Pause / Blocker**: Active feature development on city offices is on hold awaiting complete ground address data (statutory office, hub address, pin codes, landmarks).
+- Full backlog and future suggestions cataloged in [FUTURE_FEATURES.md](file:///O:/Projects/GitHub%20Repos/captain-nexus/FUTURE_FEATURES.md).

@@ -73,12 +73,19 @@
 ---
 
 ## 3. Catalog of Parked Suggestions & Future Fleet Expansions
+> See detailed roadmap and technical specifications in [FUTURE_FEATURES.md](file:///O:/Projects/GitHub%20Repos/captain-nexus/FUTURE_FEATURES.md).
 
-1. **Pre-computed Edge-Cached TopoJSON / Municipal Boundaries**:
+1. **Physical Office Address Data Ingestion & Field Auditing**:
+   - Status: Current blocker. Work on city offices is on hold awaiting verified street addresses, pin codes, and landmarks for all remaining operating cities.
+2. **Pre-computed Edge-Cached TopoJSON / Municipal Boundaries**:
    - Pre-download and compress boundary polygons for all operating cities into Cloud Storage / CDN to eliminate Nominatim external rate limits.
-2. **Offline Service Worker / PWA Caching**:
+3. **Offline Service Worker / PWA Caching**:
    - Full service worker with cache-first strategy for city directory and base map tiles, enabling offline lookups in network-dead zones.
-3. **Multi-Fleet Dataset Activation (Uber India & Ola Cabs)**:
+4. **Multi-Fleet Dataset Activation (Uber India & Ola Cabs)**:
    - Dedicated Firestore collections (`/uber_cities`, `/ola_cities`) and datasets to activate the pending fleet cards in `Zone Admin` and `Zone Taxi Home`.
-4. **Web Worker Spatial Offloading (`geoWorker.ts`)**:
+5. **Web Worker Spatial Offloading (`geoWorker.ts`)**:
    - Move ray-casting point-in-polygon checks and Haversine matrix sorting into a dedicated Web Worker for 60 FPS performance on lower-tier mobile chipsets.
+6. **Community Discrepancy Notification Alerts**:
+   - Webhook or automated alert to notify operations when new reports arrive in Firestore `/feedback_reports`.
+7. **Google AdSense Live Activation**:
+   - Input verified AdSense Client ID & Slot ID into the invisible placeholder container once account approvals clear.
