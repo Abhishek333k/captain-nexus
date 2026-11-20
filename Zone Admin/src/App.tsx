@@ -6,6 +6,7 @@ import { AdminLogin } from './components/AdminLogin';
 import { CityEditModal } from './components/CityEditModal';
 import { OfficePayloadModal } from './components/OfficePayloadModal';
 import { FeedbackReportsTab } from './components/FeedbackReportsTab';
+import { ShiftSimulatorTab } from './components/ShiftSimulatorTab';
 import { RAPIDO_OFFICIAL_CITIES, City } from '../../Zone Rapido/src/data/cities';
 import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../Zone Rapido/src/data/offices';
 
@@ -39,7 +40,7 @@ export default function AdminApp() {
     return null;
   });
 
-  const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries' | 'reports'>('cities');
+  const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries' | 'reports' | 'shifts'>('cities');
   const [cities, setCities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices, setOffices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
   const [citySearchFilter, setCitySearchFilter] = useState('');
@@ -66,6 +67,14 @@ export default function AdminApp() {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [addCityFeedback, setAddCityFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [pendingReportsCount, setPendingReportsCount] = useState<number>(0);
+  const [adminToast, setAdminToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showAdminToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setAdminToast({ message, type });
+    setTimeout(() => {
+      setAdminToast((curr) => (curr?.message === message ? null : curr));
+    }, 4500);
+  };
 
   // Office inline edit
   const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
@@ -192,27 +201,33 @@ export default function AdminApp() {
   }, []);
 
   const handleToggleCity = async (id: string) => {
-    let targetCity: City | undefined;
+    const existing = cities.find((c) => c.id === id);
+    if (!existing) return;
+
+    const toggledCity: City = { ...existing, active: !existing.active };
+
+    // 1. Synchronously update local React state
     setCities((prev) => {
-      const next = prev.map((c) => {
-        if (c.id === id) {
-          targetCity = { ...c, active: !c.active };
-          return targetCity;
-        }
-        return c;
-      });
+      const next = prev.map((c) => (c.id === id ? toggledCity : c));
       try {
         localStorage.setItem(CITIES_STORAGE_KEY, JSON.stringify(next));
       } catch {}
       return next;
     });
 
-    if (targetCity) {
-      try {
-        await setDoc(doc(db, 'cities', id), { active: (targetCity as City).active }, { merge: true });
-      } catch (err) {
-        console.error('Failed to sync city status to Firestore:', err);
-      }
+    // 2. Persist full city document to Firestore
+    try {
+      await setDoc(doc(db, 'cities', id), toggledCity, { merge: true });
+      showAdminToast(
+        `✓ "${toggledCity.name}" is now marked ${toggledCity.active ? 'Active' : 'Disabled'} and synced live to Firestore.`,
+        'success'
+      );
+    } catch (err: any) {
+      console.error('Failed to sync city status to Firestore:', err);
+      showAdminToast(
+        `Failed to sync status to Firestore: ${err?.message || 'Check administrator credentials.'}`,
+        'error'
+      );
     }
   };
 
@@ -227,8 +242,10 @@ export default function AdminApp() {
 
     try {
       await setDoc(doc(db, 'cities', updatedCity.id), updatedCity, { merge: true });
-    } catch (err) {
+      showAdminToast(`✓ Saved "${updatedCity.name}" and broadcasted live to network.`, 'success');
+    } catch (err: any) {
       console.error('Failed to persist city edit to Firestore:', err);
+      showAdminToast(`Failed to persist to Firestore: ${err?.message || 'Check permissions'}`, 'error');
     }
   };
 
@@ -653,6 +670,14 @@ export default function AdminApp() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab('shifts')}
+                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center space-x-1.5 ${
+                  activeTab === 'shifts' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>⚡ Shift Dispatch Simulator</span>
+              </button>
             </div>
           </div>
 
@@ -728,6 +753,25 @@ export default function AdminApp() {
                             </span>
                           )}
                         </div>
+
+                        {/* Cluster & Payslab Tag */}
+                        {city.clusterName && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            <span className="text-[9px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-mono font-medium">
+                              🌐 {city.clusterName}
+                            </span>
+                            {city.payslabSummary && (
+                              <span className="text-[9px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono">
+                                Base ₹{city.payslabSummary.baseFare} • ₹{city.payslabSummary.perKmRate}/km ({city.payslabSummary.captainPayoutPercent}% Payout)
+                              </span>
+                            )}
+                            {city.isSubDistrict && (
+                              <span className="text-[9px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">
+                                Sub-District Corridor
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center space-x-2">
@@ -1062,6 +1106,11 @@ export default function AdminApp() {
               }}
             />
           )}
+
+          {/* TAB 5: CAPTAIN SHIFT & REGIONAL DISPATCH SIMULATOR */}
+          {activeTab === 'shifts' && (
+            <ShiftSimulatorTab cities={cities} />
+          )}
         </div>
       )}
 
@@ -1081,6 +1130,22 @@ export default function AdminApp() {
         isOpen={isPayloadModalOpen}
         onClose={() => setIsPayloadModalOpen(false)}
       />
+
+      {/* Realtime Admin Toast Notification */}
+      {adminToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md shadow-2xl animate-fade-in pointer-events-none">
+          <div
+            className={`p-3.5 rounded-2xl border text-xs font-semibold flex items-center space-x-2.5 backdrop-blur-md ${
+              adminToast.type === 'success'
+                ? 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200 shadow-emerald-950/60'
+                : 'bg-rose-950/95 border-rose-500/50 text-rose-200 shadow-rose-950/60'
+            }`}
+          >
+            <span className="text-sm shrink-0">{adminToast.type === 'success' ? '✓' : '⚠'}</span>
+            <span className="leading-snug">{adminToast.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

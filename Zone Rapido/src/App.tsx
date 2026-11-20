@@ -580,7 +580,11 @@ export function App() {
                   </span>
                   {isInsideBoundary ? (
                     <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded">
-                      ✓ Within Official Service Area
+                      ✓ Within Official Municipal Area
+                    </span>
+                  ) : (selectedCity?.clusterName || rankedCities[0]?.clusterName) ? (
+                    <span className="bg-purple-500/15 text-purple-300 border border-purple-500/30 font-medium px-2 py-0.5 rounded">
+                      ✓ Covered under {(selectedCity?.clusterName ?? rankedCities[0]?.clusterName)?.split('(')[0].trim()} Corridor
                     </span>
                   ) : (
                     <span className="bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium px-2 py-0.5 rounded">
@@ -751,6 +755,24 @@ export function App() {
                               </span>
                             ))}
                           </div>
+
+                          {city.clusterName && (
+                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                              <span className="text-[9px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-mono font-medium">
+                                🌐 {city.clusterName}
+                              </span>
+                              {city.payslabSummary && (
+                                <span className="text-[9px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono">
+                                  Base ₹{city.payslabSummary.baseFare} • ₹{city.payslabSummary.perKmRate}/km ({city.payslabSummary.captainPayoutPercent}% Payout)
+                                </span>
+                              )}
+                              {city.isSubDistrict && (
+                                <span className="text-[9px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">
+                                  Sub-District Corridor
+                                </span>
+                              )}
+                            </div>
+                          )}
 
                           <div className="mt-2.5 pt-1.5 border-t border-slate-800/40 flex items-center justify-between">
                             <button

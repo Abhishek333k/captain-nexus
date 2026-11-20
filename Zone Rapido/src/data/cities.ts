@@ -7,6 +7,14 @@ export interface CityOfficeLocation {
   lng: number;
 }
 
+export interface PayslabSummary {
+  baseFare: number;
+  perKmRate: number;
+  captainPayoutPercent: number;
+  minFare: number;
+  interZoneSurcharge?: number;
+}
+
 export interface City {
   id: string;
   name: string;
@@ -23,6 +31,14 @@ export interface City {
   distance?: number;
   roadDistanceKm?: number;
   additionalOffices?: CityOfficeLocation[]; // Multiple office locations for major metropolitan zones
+  clusterId?: string; // Multi-zone transit cluster ID (e.g., 'pan_vijayawada', 'delhi_ncr')
+  clusterName?: string; // Human readable cluster label (e.g., 'Pan-Vijayawada (VGTM Transit Corridor)')
+  parentHubId?: string; // Parent operational hub if this zone is a satellite/sub-district
+  isSubDistrict?: boolean; // True if this zone is a peripheral/sub-district municipality
+  payslabTier?: 'metro_tier1' | 'urban_tier2' | 'suburban_tier3' | 'corridor';
+  payslabSummary?: PayslabSummary;
+  connectedZoneIds?: string[]; // IDs of member zones eligible for cross-dispatch
+  crossDispatchEnabled?: boolean;
 }
 
 export type ServiceType = 'bike' | 'auto' | 'cab' | 'b2b' | 'e_rickshaw' | 'tuk_tuk';
@@ -242,7 +258,13 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     address: '61, 3rd Floor, B.P. Marg, Arjun Nagar, Kotla Mubarakpur, New Delhi',
     pincode: '110003',
     landmarkNote: 'South Delhi Hub • Opposite Defence Colony / Near South Extension',
-    notes: 'Multiple verified regional hubs across South Delhi, Noida, and Gurugram',
+    notes: 'National Capital Region apex hub • Cross-dispatch enabled across Delhi, Noida, and Gurugram',
+    clusterId: 'delhi_ncr',
+    clusterName: 'Delhi NCR Transit Cluster',
+    payslabTier: 'metro_tier1',
+    payslabSummary: { baseFare: 35, perKmRate: 12.0, captainPayoutPercent: 80, minFare: 40, interZoneSurcharge: 20 },
+    connectedZoneIds: ['noida', 'gurugram'],
+    crossDispatchEnabled: true,
     additionalOffices: [
       {
         name: 'Delhi NCR - Noida Sector 6 Hub',
@@ -276,7 +298,23 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'eluru', name: 'Eluru', state: 'Andhra Pradesh', lat: 16.7107, lng: 81.0952, services: ['bike', 'auto'], active: true },
   { id: 'gaya', name: 'Gaya', state: 'Bihar', lat: 24.7914, lng: 85.0002, services: ['bike', 'auto', 'e_rickshaw'], active: true },
   { id: 'gorakhpur', name: 'Gorakhpur', state: 'Uttar Pradesh', lat: 26.7606, lng: 83.3732, services: ['bike', 'auto', 'e_rickshaw'], active: true },
-  { id: 'guntur', name: 'Guntur', state: 'Andhra Pradesh', lat: 16.3067, lng: 80.4365, services: ['bike', 'auto'], active: true },
+  {
+    id: 'guntur',
+    name: 'Guntur',
+    state: 'Andhra Pradesh',
+    lat: 16.3067,
+    lng: 80.4365,
+    services: ['bike', 'auto'],
+    active: true,
+    clusterId: 'pan_vijayawada',
+    clusterName: 'Pan-Vijayawada (VGTM Transit Corridor)',
+    parentHubId: 'vijayawada',
+    payslabTier: 'urban_tier2',
+    payslabSummary: { baseFare: 22, perKmRate: 8.5, captainPayoutPercent: 80, minFare: 28, interZoneSurcharge: 15 },
+    connectedZoneIds: ['vijayawada', 'tadepalli'],
+    crossDispatchEnabled: true,
+    notes: 'Pan-Vijayawada satellite hub with autonomous local payslab (₹8.5/km) • Highway return ride priority to Vijayawada'
+  },
   { id: 'guwahati', name: 'Guwahati', state: 'Assam', lat: 26.1445, lng: 91.7362, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'gwalior', name: 'Gwalior', state: 'Madhya Pradesh', lat: 26.2183, lng: 78.1828, services: ['bike', 'auto', 'e_rickshaw'], active: true },
   {
@@ -291,6 +329,13 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     pincode: '122022',
     landmarkNote: 'Silokhra Road, Sector 30 (Near Star Mall / NH-48)',
     notes: 'Cyber City, Golf Course Road, and Sohna Road transit network • Active Serviceable Transit Hub',
+    clusterId: 'delhi_ncr',
+    clusterName: 'Delhi NCR Transit Cluster',
+    parentHubId: 'delhi',
+    payslabTier: 'metro_tier1',
+    payslabSummary: { baseFare: 35, perKmRate: 12.5, captainPayoutPercent: 80, minFare: 40, interZoneSurcharge: 25 },
+    connectedZoneIds: ['delhi', 'noida'],
+    crossDispatchEnabled: true,
     additionalOffices: [
       {
         name: 'Roppen Transportation - Gurugram Sector 32 Hub',
@@ -358,7 +403,14 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     address: 'G-13, G Block, Ground Floor, Sector 6, Noida, Gautam Buddha Nagar, Uttar Pradesh',
     pincode: '201301',
     landmarkNote: 'Sector 6 Commercial Hub • Active Serviceable Transit Hub',
-    notes: 'Noida-Greater Noida Expressway, Sector 62, and DND transit network'
+    notes: 'Noida-Greater Noida Expressway, Sector 62, and DND transit network',
+    clusterId: 'delhi_ncr',
+    clusterName: 'Delhi NCR Transit Cluster',
+    parentHubId: 'delhi',
+    payslabTier: 'metro_tier1',
+    payslabSummary: { baseFare: 32, perKmRate: 11.5, captainPayoutPercent: 80, minFare: 35, interZoneSurcharge: 20 },
+    connectedZoneIds: ['delhi', 'gurugram'],
+    crossDispatchEnabled: true
   },
   { id: 'ongole', name: 'Ongole', state: 'Andhra Pradesh', lat: 15.5057, lng: 80.0499, services: ['bike', 'auto'], active: true },
   { id: 'patiala', name: 'Patiala', state: 'Punjab', lat: 30.3398, lng: 76.3869, services: ['bike', 'auto'], active: true },
@@ -387,10 +439,76 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'ujjain', name: 'Ujjain', state: 'Madhya Pradesh', lat: 23.1765, lng: 75.7885, services: ['bike', 'auto'], active: true },
   { id: 'vadodara', name: 'Vadodara', state: 'Gujarat', lat: 22.3072, lng: 73.1812, services: ['bike', 'auto'], active: true },
   { id: 'varanasi', name: 'Varanasi', state: 'Uttar Pradesh', lat: 25.3176, lng: 82.9739, services: ['bike', 'auto', 'e_rickshaw', 'tuk_tuk'], active: true },
-  { id: 'vijayawada', name: 'Vijayawada', state: 'Andhra Pradesh', lat: 16.5062, lng: 80.6480, services: ['bike', 'auto', 'cab'], active: true },
+  {
+    id: 'vijayawada',
+    name: 'Vijayawada',
+    state: 'Andhra Pradesh',
+    lat: 16.5062,
+    lng: 80.6480,
+    services: ['bike', 'auto', 'cab'],
+    active: true,
+    clusterId: 'pan_vijayawada',
+    clusterName: 'Pan-Vijayawada (VGTM Transit Corridor)',
+    payslabTier: 'urban_tier2',
+    payslabSummary: { baseFare: 25, perKmRate: 9.5, captainPayoutPercent: 80, minFare: 30, interZoneSurcharge: 15 },
+    connectedZoneIds: ['guntur', 'tadepalli'],
+    crossDispatchEnabled: true,
+    notes: 'VGTM Metropolitan Corridor primary hub • Cross-dispatch enabled for Guntur & Tadepalli corridors'
+  },
   { id: 'vishakapatnam', name: 'Visakhapatnam', state: 'Andhra Pradesh', lat: 17.6868, lng: 83.2185, services: ['bike', 'auto', 'cab', 'b2b'], active: true },
   { id: 'warangal', name: 'Warangal', state: 'Telangana', lat: 17.9689, lng: 79.5941, services: ['bike', 'auto', 'b2b'], active: true },
-  { id: 'tadepalli', name: 'Tadepalli (Guntur)', state: 'Andhra Pradesh', lat: 16.4815, lng: 80.6050, services: ['bike', 'auto'], active: true, notes: 'Sub-district / Municipality adjacent to Vijayawada & Guntur hubs' },
-  { id: 'narayanpet', name: 'Narayanpet (Telangana)', state: 'Telangana', lat: 16.7324, lng: 77.4984, services: ['bike', 'auto'], active: true, notes: 'District headquarters (Nearest active operating hub: Mahbubnagar / Hyderabad)' },
-  { id: 'parvathipuram', name: 'Parvathipuram (Andhra Pradesh)', state: 'Andhra Pradesh', lat: 18.7758, lng: 83.4278, services: ['bike', 'auto'], active: true, notes: 'District headquarters (Nearest active operating hub: Vizianagaram / Visakhapatnam)' }
+  {
+    id: 'tadepalli',
+    name: 'Tadepalli (Guntur)',
+    state: 'Andhra Pradesh',
+    lat: 16.4815,
+    lng: 80.6050,
+    services: ['bike', 'auto'],
+    active: true,
+    clusterId: 'pan_vijayawada',
+    clusterName: 'Pan-Vijayawada (VGTM Transit Corridor)',
+    parentHubId: 'vijayawada',
+    isSubDistrict: true,
+    payslabTier: 'corridor',
+    payslabSummary: { baseFare: 20, perKmRate: 8.0, captainPayoutPercent: 82, minFare: 25, interZoneSurcharge: 10 },
+    connectedZoneIds: ['vijayawada', 'guntur'],
+    crossDispatchEnabled: true,
+    notes: 'Krishna river transit corridor municipality bridging Vijayawada & Guntur • Dual-hub dispatch eligibility'
+  },
+  {
+    id: 'narayanpet',
+    name: 'Narayanpet (Telangana)',
+    state: 'Telangana',
+    lat: 16.7324,
+    lng: 77.4984,
+    services: ['bike', 'auto'],
+    active: true,
+    clusterId: 'pan_hyderabad',
+    clusterName: 'Hyderabad Southern Regional Transit Cluster',
+    parentHubId: 'hyderabad',
+    isSubDistrict: true,
+    payslabTier: 'suburban_tier3',
+    payslabSummary: { baseFare: 20, perKmRate: 7.5, captainPayoutPercent: 85, minFare: 25 },
+    connectedZoneIds: ['hyderabad'],
+    crossDispatchEnabled: true,
+    notes: 'District headquarters linked to Mahbubnagar / Hyderabad regional corridor'
+  },
+  {
+    id: 'parvathipuram',
+    name: 'Parvathipuram (Andhra Pradesh)',
+    state: 'Andhra Pradesh',
+    lat: 18.7758,
+    lng: 83.4278,
+    services: ['bike', 'auto'],
+    active: true,
+    clusterId: 'north_coastal_ap',
+    clusterName: 'North Coastal AP Transit Cluster',
+    parentHubId: 'vishakapatnam',
+    isSubDistrict: true,
+    payslabTier: 'suburban_tier3',
+    payslabSummary: { baseFare: 20, perKmRate: 7.5, captainPayoutPercent: 85, minFare: 25 },
+    connectedZoneIds: ['vishakapatnam'],
+    crossDispatchEnabled: true,
+    notes: 'Manyam district headquarters connected via Vizianagaram / Visakhapatnam transit spine'
+  }
 ];
