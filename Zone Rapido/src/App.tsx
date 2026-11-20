@@ -97,7 +97,7 @@ export function App() {
 
   // Layer Visibility Controls
   const [showCityPins, setShowCityPins] = useState(true);
-  const [showOfficePins, setShowOfficePins] = useState(false);
+  const [showOfficePins, setShowOfficePins] = useState(true);
   const [showSurgeHexagons, setShowSurgeHexagons] = useState(false);
 
   // Community Discrepancy & Address Reporting Modal
@@ -691,6 +691,51 @@ export function App() {
                                   <span className="text-amber-500/90 italic select-text">📍 {city.landmarkNote}</span>
                                 )}
                               </div>
+                            </div>
+                          )}
+
+                          {city.additionalOffices && city.additionalOffices.length > 0 && (
+                            <div className="mt-2 space-y-1.5">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+                                <span>📍</span>
+                                <span>Additional Verified Regional Hubs ({city.additionalOffices.length}):</span>
+                              </div>
+                              {city.additionalOffices.map((addOffice, addIdx) => (
+                                <div
+                                  key={addIdx}
+                                  className={`p-2 rounded-lg border text-xs leading-relaxed select-text ${
+                                    isDarkMode
+                                      ? 'bg-slate-900/60 border-slate-800 text-slate-300'
+                                      : 'bg-blue-50/70 border-blue-200 text-slate-700'
+                                  }`}
+                                >
+                                  <div className="font-bold flex items-center justify-between text-[11px] text-blue-400">
+                                    <span>{addOffice.name}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                          navigator.clipboard.writeText(`${addOffice.address}${addOffice.pincode ? ` PIN: ${addOffice.pincode}` : ''}`);
+                                        }
+                                      }}
+                                      title="Copy address"
+                                      className="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.2 rounded border border-slate-700 cursor-pointer font-normal"
+                                    >
+                                      Copy
+                                    </button>
+                                  </div>
+                                  <p className="mt-0.5 text-[11px] leading-snug select-text cursor-text">{addOffice.address}</p>
+                                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px]">
+                                    {addOffice.pincode && (
+                                      <span className="font-mono text-slate-400 select-text">PIN: {addOffice.pincode}</span>
+                                    )}
+                                    {addOffice.landmarkNote && (
+                                      <span className="text-blue-400 italic select-text">📍 {addOffice.landmarkNote}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           )}
 

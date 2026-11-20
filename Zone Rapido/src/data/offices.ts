@@ -122,6 +122,22 @@ export const ROPPEN_STATUTORY_OFFICES: CityOffice[] = [
     statutorySource: 'Ground Verified Rapido Captain Onboarding Center'
   },
   {
+    id: 'roppen-delhi-sec32',
+    name: 'Roppen Transportation Services - Gurugram Sector 32 Hub',
+    legalEntity: 'Roppen Transportation Services Private Limited',
+    cin: 'U52210TG2015PTC097115',
+    city: 'Gurugram',
+    state: 'Haryana',
+    address: 'Plot No. 19, Ground & 1st Floor, Institutional Area, Sector 32, Gurugram, Delhi NCR',
+    landmarkNote: 'Near Rajiv Chowk & Medanta Hospital Corridor',
+    pincode: '122001',
+    lat: 28.4485,
+    lng: 77.0425,
+    timing: '09:30 AM - 6:30 PM (Mon-Sat)',
+    type: 'regional_support_hub',
+    statutorySource: 'Ground Verified Rapido Captain Onboarding Center'
+  },
+  {
     id: 'roppen-coimbatore',
     name: 'Roppen Transportation Services - Coimbatore Support Center',
     legalEntity: 'Roppen Transportation Services Private Limited',

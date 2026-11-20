@@ -127,7 +127,7 @@ export const MapView: React.FC<MapProps> = ({
   onSelectOffice,
   showSurgeHexagons = false,
   showCityPins = true,
-  showOfficePins = false,
+  showOfficePins = true,
   activeCityBoundary = null,
   selectedCityName = null,
   isCaptainInsideBoundary = false
@@ -295,7 +295,7 @@ export const MapView: React.FC<MapProps> = ({
                           <div className="font-bold text-[10px] text-amber-900 flex items-center justify-between mb-1">
                             <span className="flex items-center space-x-1">
                               <span>🏢</span>
-                              <span>City Office:</span>
+                              <span>{city.additionalOffices && city.additionalOffices.length > 0 ? 'Primary City Office:' : 'City Office:'}</span>
                             </span>
                             <button
                               type="button"
@@ -303,7 +303,7 @@ export const MapView: React.FC<MapProps> = ({
                               title="Copy address"
                               className="text-[9px] bg-amber-100 hover:bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300 font-medium cursor-pointer"
                             >
-                              📋 Copy Address
+                              📋 Copy
                             </button>
                           </div>
                           <div className="text-slate-800 select-text leading-snug">{city.address}</div>
@@ -313,6 +313,40 @@ export const MapView: React.FC<MapProps> = ({
                           {city.landmarkNote && (
                             <div className="text-[10px] text-amber-800 italic mt-1 select-text">📍 {city.landmarkNote}</div>
                           )}
+                        </div>
+                      )}
+
+                      {/* Additional Regional Offices for Major Metros */}
+                      {city.additionalOffices && city.additionalOffices.length > 0 && (
+                        <div className="space-y-1.5 my-1.5">
+                          <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                            Additional Regional Hubs ({city.additionalOffices.length}):
+                          </div>
+                          {city.additionalOffices.map((addOffice, addIdx) => (
+                            <div key={addIdx} className="p-2 bg-blue-50/80 rounded-lg border border-blue-200 text-[11px] leading-tight select-text cursor-text">
+                              <div className="font-bold text-[10px] text-blue-900 flex items-center justify-between mb-1">
+                                <span className="flex items-center space-x-1">
+                                  <span>📍</span>
+                                  <span>{addOffice.name}</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => copyToClipboard(`${addOffice.address}${addOffice.pincode ? ` PIN: ${addOffice.pincode}` : ''}`)}
+                                  title="Copy address"
+                                  className="text-[9px] bg-blue-100 hover:bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded border border-blue-300 font-medium cursor-pointer"
+                                >
+                                  📋 Copy
+                                </button>
+                              </div>
+                              <div className="text-slate-800 select-text leading-snug">{addOffice.address}</div>
+                              {addOffice.pincode && (
+                                <div className="text-[10px] text-slate-600 font-mono mt-0.5 select-text">PIN: {addOffice.pincode}</div>
+                              )}
+                              {addOffice.landmarkNote && (
+                                <div className="text-[10px] text-blue-800 italic mt-0.5 select-text">📍 {addOffice.landmarkNote}</div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
 
@@ -421,8 +455,9 @@ export const MapView: React.FC<MapProps> = ({
                       </button>
                     </div>
 
-                    <div className="text-[9px] text-emerald-700 font-semibold mb-1">
-                      ✓ Verified Office Location
+                    <div className="flex items-center flex-wrap gap-1.5 text-[10px] mb-1">
+                      <span className="text-emerald-700 font-bold">✓ Verified Office Location</span>
+                      <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold text-[9px]">Active Serviceable Zone</span>
                     </div>
 
                     {office.distance !== undefined && (

@@ -1,3 +1,12 @@
+export interface CityOfficeLocation {
+  name: string;
+  address: string;
+  landmarkNote?: string;
+  pincode?: string;
+  lat: number;
+  lng: number;
+}
+
 export interface City {
   id: string;
   name: string;
@@ -13,6 +22,7 @@ export interface City {
   notes?: string; // Operational notes (e.g., service zones, high demand hours)
   distance?: number;
   roadDistanceKm?: number;
+  additionalOffices?: CityOfficeLocation[]; // Multiple office locations for major metropolitan zones
 }
 
 export type ServiceType = 'bike' | 'auto' | 'cab' | 'b2b' | 'e_rickshaw' | 'tuk_tuk';
@@ -107,8 +117,18 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     active: true, 
     address: '613, 1st Main Road, Muneswara Nagar, Sector 6, HSR Layout, Bengaluru, Karnataka (Plus Code: WJ8F+FV3)',
     pincode: '560102',
-    landmarkNote: 'Sector 6 HSR Layout Onboarding Hub • Corporate HQ at Mantri Commercio, Bellandur',
-    notes: 'Corporate HQ hub • 24x7 service availability across all categories' 
+    landmarkNote: 'Sector 6 HSR Layout Onboarding Hub',
+    notes: 'Corporate HQ and regional onboarding centers in HSR Layout and Bellandur',
+    additionalOffices: [
+      {
+        name: 'Roppen Transportation - Corporate Headquarters',
+        address: 'Mantri Commercio, Spatium Tower A, Outer Ring Road, Devarabeesanahalli Village, Bengaluru, Karnataka',
+        pincode: '560103',
+        landmarkNote: 'Opposite Central Mall / Near Bellandur Flyover on Outer Ring Road',
+        lat: 12.9279,
+        lng: 77.6841
+      }
+    ]
   },
   { 
     id: 'bareilly', 
@@ -215,14 +235,40 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     id: 'delhi', 
     name: 'Delhi NCR (Delhi/Noida/Gurugram)', 
     state: 'Delhi NCR', 
-    lat: 28.7041, 
-    lng: 77.1025, 
+    lat: 28.6139, 
+    lng: 77.2090, 
     services: ['bike', 'auto', 'cab', 'e_rickshaw', 'b2b'], 
     active: true, 
     address: '61, 3rd Floor, B.P. Marg, Arjun Nagar, Kotla Mubarakpur, New Delhi',
     pincode: '110003',
-    landmarkNote: 'Opposite Defence Colony / Near South Extension',
-    notes: 'Major NCR Hubs: Delhi (Kotla Mubarakpur), Gurugram (Sec 30 & Sec 32), Noida (Sec 6)' 
+    landmarkNote: 'South Delhi Hub • Opposite Defence Colony / Near South Extension',
+    notes: 'Multiple verified regional hubs across South Delhi, Noida, and Gurugram',
+    additionalOffices: [
+      {
+        name: 'Delhi NCR - Noida Sector 6 Hub',
+        address: 'G-13, G Block, Ground Floor, Sector 6, Noida, Gautam Buddha Nagar, Uttar Pradesh',
+        pincode: '201301',
+        landmarkNote: 'Sector 6 Commercial Hub',
+        lat: 28.5985,
+        lng: 77.3195
+      },
+      {
+        name: 'Delhi NCR - Gurugram Sector 30 Hub',
+        address: 'Plot No. 108, 1st Floor, Vijay Vihar, Silokhra Road, Sector 30, Gurugram, Haryana',
+        pincode: '122022',
+        landmarkNote: 'Near Star Mall / NH-48 Corridor',
+        lat: 28.4601,
+        lng: 77.0504
+      },
+      {
+        name: 'Delhi NCR - Gurugram Sector 32 Hub',
+        address: 'Plot No. 19, Ground & 1st Floor, Institutional Area, Sector 32, Gurugram, Delhi NCR',
+        pincode: '122001',
+        landmarkNote: 'Near Rajiv Chowk & Medanta Hospital Corridor',
+        lat: 28.4485,
+        lng: 77.0425
+      }
+    ]
   },
   { id: 'dhanbad', name: 'Dhanbad', state: 'Jharkhand', lat: 23.7957, lng: 86.4304, services: ['bike', 'auto'], active: true },
   { id: 'dibrugarh', name: 'Dibrugarh', state: 'Assam', lat: 27.4728, lng: 94.9120, services: ['bike', 'auto'], active: true },
@@ -233,6 +279,29 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'guntur', name: 'Guntur', state: 'Andhra Pradesh', lat: 16.3067, lng: 80.4365, services: ['bike', 'auto'], active: true },
   { id: 'guwahati', name: 'Guwahati', state: 'Assam', lat: 26.1445, lng: 91.7362, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'gwalior', name: 'Gwalior', state: 'Madhya Pradesh', lat: 26.2183, lng: 78.1828, services: ['bike', 'auto', 'e_rickshaw'], active: true },
+  {
+    id: 'gurugram',
+    name: 'Gurugram / Gurgaon (Delhi NCR)',
+    state: 'Haryana',
+    lat: 28.4601,
+    lng: 77.0504,
+    services: ['bike', 'auto', 'cab', 'b2b'],
+    active: true,
+    address: 'Plot No. 108, 1st Floor, Vijay Vihar, Silokhra Road, Sector 30, Gurugram, Haryana',
+    pincode: '122022',
+    landmarkNote: 'Silokhra Road, Sector 30 (Near Star Mall / NH-48)',
+    notes: 'Cyber City, Golf Course Road, and Sohna Road transit network • Active Serviceable Transit Hub',
+    additionalOffices: [
+      {
+        name: 'Roppen Transportation - Gurugram Sector 32 Hub',
+        address: 'Plot No. 19, Ground & 1st Floor, Institutional Area, Sector 32, Gurugram, Delhi NCR',
+        pincode: '122001',
+        landmarkNote: 'Near Rajiv Chowk & Medanta Hospital Corridor',
+        lat: 28.4485,
+        lng: 77.0425
+      }
+    ]
+  },
   { 
     id: 'hyderabad', 
     name: 'Hyderabad', 
@@ -278,6 +347,19 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'nagpur', name: 'Nagpur', state: 'Maharashtra', lat: 21.1458, lng: 79.0882, services: ['bike', 'auto', 'cab'], active: true },
   { id: 'nandyala', name: 'Nandyala', state: 'Andhra Pradesh', lat: 15.4875, lng: 78.4836, services: ['bike', 'auto'], active: true },
   { id: 'nellore', name: 'Nellore', state: 'Andhra Pradesh', lat: 14.4426, lng: 79.9865, services: ['bike', 'auto'], active: true },
+  {
+    id: 'noida',
+    name: 'Noida (Delhi NCR)',
+    state: 'Uttar Pradesh',
+    lat: 28.5985,
+    lng: 77.3195,
+    services: ['bike', 'auto', 'cab', 'b2b'],
+    active: true,
+    address: 'G-13, G Block, Ground Floor, Sector 6, Noida, Gautam Buddha Nagar, Uttar Pradesh',
+    pincode: '201301',
+    landmarkNote: 'Sector 6 Commercial Hub • Active Serviceable Transit Hub',
+    notes: 'Noida-Greater Noida Expressway, Sector 62, and DND transit network'
+  },
   { id: 'ongole', name: 'Ongole', state: 'Andhra Pradesh', lat: 15.5057, lng: 80.0499, services: ['bike', 'auto'], active: true },
   { id: 'patiala', name: 'Patiala', state: 'Punjab', lat: 30.3398, lng: 76.3869, services: ['bike', 'auto'], active: true },
   { id: 'patna', name: 'Patna', state: 'Bihar', lat: 25.5941, lng: 85.1376, services: ['bike', 'auto', 'e_rickshaw', 'tuk_tuk'], active: true },
