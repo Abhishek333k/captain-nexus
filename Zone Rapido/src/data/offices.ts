@@ -361,5 +361,21 @@ export const ROPPEN_STATUTORY_OFFICES: CityOffice[] = [
     timing: '10:00 AM - 6:00 PM (Mon-Sat)',
     type: 'regional_support_hub',
     statutorySource: 'Ground Verified Rapido Captain Onboarding Center'
+  },
+  {
+    id: 'roppen-guntur',
+    name: 'Roppen Transportation Services - Guntur Branch Office',
+    legalEntity: 'Roppen Transportation Services Private Limited',
+    cin: 'U52210TG2015PTC097115',
+    city: 'Guntur',
+    state: 'Andhra Pradesh',
+    address: 'D.No : 5-50-62, Opp Sitara Apartment, 6/14 Brodipet, Guntur, Andhra Pradesh',
+    landmarkNote: 'Opp Sitara Apartment, 6/14 Brodipet',
+    pincode: '522002',
+    lat: 16.3067,
+    lng: 80.4365,
+    timing: '10:00 AM - 6:30 PM (Mon-Sat)',
+    type: 'regional_support_hub',
+    statutorySource: 'Community Ground Verified Branch Office'
   }
 ];

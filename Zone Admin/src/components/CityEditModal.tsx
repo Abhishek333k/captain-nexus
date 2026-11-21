@@ -39,11 +39,6 @@ export const CityEditModal: React.FC<CityEditModalProps> = ({
   const [clusterName, setClusterName] = useState(city.clusterName || '');
   const [parentHubId, setParentHubId] = useState(city.parentHubId || '');
   const [isSubDistrict, setIsSubDistrict] = useState(city.isSubDistrict || false);
-  const [payslabTier, setPayslabTier] = useState<string>(city.payslabTier || 'urban_tier2');
-  const [baseFare, setBaseFare] = useState(city.payslabSummary?.baseFare?.toString() || '');
-  const [perKmRate, setPerKmRate] = useState(city.payslabSummary?.perKmRate?.toString() || '');
-  const [captainPayoutPercent, setCaptainPayoutPercent] = useState(city.payslabSummary?.captainPayoutPercent?.toString() || '80');
-  const [interZoneSurcharge, setInterZoneSurcharge] = useState(city.payslabSummary?.interZoneSurcharge?.toString() || '');
   const [crossDispatchEnabled, setCrossDispatchEnabled] = useState(city.crossDispatchEnabled ?? true);
 
   const toggleService = (svc: ServiceType) => {
@@ -70,14 +65,6 @@ export const CityEditModal: React.FC<CityEditModalProps> = ({
       clusterName: clusterName.trim() || undefined,
       parentHubId: parentHubId.trim() || undefined,
       isSubDistrict,
-      payslabTier: payslabTier as any,
-      payslabSummary: baseFare ? {
-        baseFare: parseFloat(baseFare) || 20,
-        perKmRate: parseFloat(perKmRate) || 8.0,
-        captainPayoutPercent: parseFloat(captainPayoutPercent) || 80,
-        minFare: parseFloat(baseFare) || 20,
-        interZoneSurcharge: interZoneSurcharge ? parseFloat(interZoneSurcharge) : undefined
-      } : city.payslabSummary,
       crossDispatchEnabled
     });
     onClose();
@@ -259,75 +246,15 @@ export const CityEditModal: React.FC<CityEditModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Parent Hub City ID</label>
-                <input
-                  type="text"
-                  placeholder="e.g. vijayawada"
-                  value={parentHubId}
-                  onChange={(e) => setParentHubId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-purple-400 focus:outline-none font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Payslab Tariff Tier</label>
-                <select
-                  value={payslabTier}
-                  onChange={(e) => setPayslabTier(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-purple-400 focus:outline-none"
-                >
-                  <option value="metro_tier1">Tier 1 Metro (₹35 base)</option>
-                  <option value="urban_tier2">Tier 2 Urban (₹25 base)</option>
-                  <option value="suburban_tier3">Tier 3 Suburban (₹20 base)</option>
-                  <option value="corridor">Inter-City Corridor</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Fare Matrix & Payout Inputs */}
-            <div className="grid grid-cols-4 gap-2 pt-1 border-t border-purple-500/20">
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">Base Fare (₹)</label>
-                <input
-                  type="number"
-                  placeholder="25"
-                  value={baseFare}
-                  onChange={(e) => setBaseFare(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">Per Km (₹)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  placeholder="9.5"
-                  value={perKmRate}
-                  onChange={(e) => setPerKmRate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">Payout %</label>
-                <input
-                  type="number"
-                  placeholder="80"
-                  value={captainPayoutPercent}
-                  onChange={(e) => setCaptainPayoutPercent(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">Toll / Surcharge</label>
-                <input
-                  type="number"
-                  placeholder="15"
-                  value={interZoneSurcharge}
-                  onChange={(e) => setInterZoneSurcharge(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none"
-                />
-              </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Parent Hub City ID</label>
+              <input
+                type="text"
+                placeholder="e.g. vijayawada"
+                value={parentHubId}
+                onChange={(e) => setParentHubId(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-purple-400 focus:outline-none font-mono"
+              />
             </div>
 
             <div className="flex items-center justify-between pt-1">

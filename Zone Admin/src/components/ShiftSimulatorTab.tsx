@@ -44,41 +44,25 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
     return cities.filter((c) => c.id === homeCity.id || connected.includes(c.id));
   }, [homeCity, shiftMode, clusterMemberCities, cities]);
 
-  // Pricing calculations
-  const homePayslab = homeCity?.payslabSummary || {
-    baseFare: 25,
-    perKmRate: 9.5,
-    captainPayoutPercent: 80,
-    minFare: 30,
-    interZoneSurcharge: 15
-  };
-
   const isCrossZone = homeCity?.id !== dropoffCity?.id;
+  const isSameCluster = Boolean(
+    homeCity?.clusterId && dropoffCity?.clusterId && homeCity.clusterId === dropoffCity.clusterId
+  );
   const isInterCluster = Boolean(
     homeCity?.clusterId && dropoffCity?.clusterId && homeCity.clusterId !== dropoffCity.clusterId
   );
 
-  // Estimated Fare calculation
-  const calculatedFare = useMemo(() => {
-    const base = homePayslab.baseFare;
-    const distanceCost = testTripDistanceKm * homePayslab.perKmRate;
-    const surcharge = isCrossZone
-      ? (homePayslab.interZoneSurcharge || 15) + (isInterCluster ? 25 : 0)
-      : 0;
-    const rawTotal = base + distanceCost + surcharge;
-    const finalFare = Math.max(rawTotal, homePayslab.minFare);
-    const captainNet = Math.round(finalFare * (homePayslab.captainPayoutPercent / 100));
-    const platformFee = finalFare - captainNet;
+  // Speed estimates based on vehicle type
+  const avgSpeedKmh = useMemo(() => {
+    switch (vehicleType) {
+      case 'bike': return 35;
+      case 'auto': return 28;
+      case 'cab': return 45;
+      default: return 30;
+    }
+  }, [vehicleType]);
 
-    return {
-      finalFare: Math.round(finalFare),
-      captainNet,
-      platformFee,
-      surcharge,
-      base,
-      distanceCost: Math.round(distanceCost)
-    };
-  }, [homePayslab, testTripDistanceKm, isCrossZone, isInterCluster]);
+  const estimatedMinutes = Math.round((testTripDistanceKm / avgSpeedKmh) * 60);
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
@@ -88,14 +72,14 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
             <h2 className="text-base font-bold text-white tracking-wide">
-              Captain Shift & Regional Dispatch Simulator
+              Captain Shift & Regional Transit Dispatch Simulator
             </h2>
             <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded font-mono font-bold">
               Multi-Zone Conurbation Engine
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Simulate operational shift policies across contiguous transit corridors (e.g. Pan-Vijayawada VGTM, Delhi NCR).
+            Simulate regional transit boundaries, dispatch radii, and return corridor pairing across contiguous transit zones (e.g. Pan-Vijayawada VGTM, Delhi NCR).
           </p>
         </div>
       </div>
@@ -113,7 +97,6 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
             value={selectedCityId}
             onChange={(e) => {
               setSelectedCityId(e.target.value);
-              // auto set a different dropoff in the same cluster if possible
               const newHome = cities.find((c) => c.id === e.target.value);
               if (newHome?.connectedZoneIds && newHome.connectedZoneIds.length > 0) {
                 setTestDropoffCityId(newHome.connectedZoneIds[0]);
@@ -141,6 +124,9 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
               )}
               {homeCity.isSubDistrict && (
                 <div className="text-emerald-300">Sub-District / Peripheral Corridor</div>
+              )}
+              {homeCity.address && (
+                <div className="text-slate-400 truncate">Office: {homeCity.address}</div>
               )}
             </div>
           )}
@@ -186,7 +172,7 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
                 {shiftMode === 'corridor_express' && <span className="text-amber-400">✓</span>}
               </div>
               <p className="text-[10px] text-slate-400 mt-0.5">
-                Restricted to high-speed express corridors connecting twin cities via highway toll.
+                Restricted to high-speed express corridors connecting twin cities via highway spine.
               </p>
             </button>
 
@@ -210,11 +196,11 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
           </div>
         </div>
 
-        {/* Card 3: Vehicle Type & Tariff Matrix */}
+        {/* Card 3: Vehicle Type & Transit Operational Profile */}
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-200">3. Tariff & Payslab Profile</span>
-            <span className="text-[10px] text-emerald-400 font-mono">Commission Engine</span>
+            <span className="text-xs font-bold text-slate-200">3. Vehicle Profile & Operational Range</span>
+            <span className="text-[10px] text-emerald-400 font-mono">Fleet Class</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -236,20 +222,20 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
 
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs">
             <div className="flex justify-between text-slate-400">
-              <span>Base Fare:</span>
-              <span className="font-mono text-white">₹{homePayslab.baseFare}</span>
+              <span>Average Cruise Speed:</span>
+              <span className="font-mono text-white">{avgSpeedKmh} km/h</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Per Km Rate:</span>
-              <span className="font-mono text-white">₹{homePayslab.perKmRate}/km</span>
+              <span>Highway Permitted:</span>
+              <span className="font-mono text-emerald-400 font-bold">{vehicleType === 'auto' ? 'Secondary Lanes' : 'Express Corridor'}</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Captain Share:</span>
-              <span className="font-mono text-emerald-400 font-bold">{homePayslab.captainPayoutPercent}%</span>
+              <span>Max Shift Dispatch Radius:</span>
+              <span className="font-mono text-purple-400">{vehicleType === 'bike' ? '45 km' : vehicleType === 'cab' ? '65 km' : '25 km'}</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Corridor Toll Allowance:</span>
-              <span className="font-mono text-purple-400">₹{homePayslab.interZoneSurcharge || 15}</span>
+              <span>Reverse Return Priority:</span>
+              <span className="font-mono text-amber-300">Active</span>
             </div>
           </div>
         </div>
@@ -264,7 +250,7 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
               <span>Eligible Ride Dispatch Zones ({eligibleDispatchZones.length})</span>
             </h3>
             <p className="text-xs text-slate-400">
-              Ride requests originating within these zones will ring on the Captain's terminal during this shift.
+              Ride requests originating within these municipal borders will ring on the Captain terminal during this shift.
             </p>
           </div>
           <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -298,10 +284,13 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
                 </div>
                 <div className="text-[11px] text-slate-400 flex items-center justify-between">
                   <span>{zone.state}</span>
-                  <span className="font-mono text-[10px]">
-                    ₹{zone.payslabSummary?.perKmRate || 8.5}/km
+                  <span className="font-mono text-[10px] text-purple-300">
+                    {zone.clusterName ? zone.clusterName.split('(')[0].trim() : 'Local Zone'}
                   </span>
                 </div>
+                {zone.address && (
+                  <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">🏢 {zone.address}</p>
+                )}
                 {zone.notes && (
                   <p className="text-[10px] text-slate-500 italic mt-1 line-clamp-1">{zone.notes}</p>
                 )}
@@ -316,7 +305,7 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="text-base">⚡</span>
-            <h3 className="text-sm font-bold text-white">Live Fare & Deadhead Return Protocol Simulation</h3>
+            <h3 className="text-sm font-bold text-white">Transit Corridor & Deadhead Return Protocol Simulation</h3>
           </div>
           <span className="text-[10px] text-purple-300 font-mono">Transit Corridor Test</span>
         </div>
@@ -363,23 +352,27 @@ export const ShiftSimulatorTab: React.FC<ShiftSimulatorTabProps> = ({ cities }) 
         {/* Simulation Output Card */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-950/90 border border-purple-500/30">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Commuter Fare</span>
-            <div className="text-xl font-black text-white mt-0.5">₹{calculatedFare.finalFare}</div>
-            <p className="text-[10px] text-slate-500">Base ₹{calculatedFare.base} + ₹{calculatedFare.distanceCost} distance</p>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Estimated Transit Duration</span>
+            <div className="text-xl font-black text-white mt-0.5">~{estimatedMinutes} mins</div>
+            <p className="text-[10px] text-slate-500">Based on {avgSpeedKmh} km/h {vehicleType} average velocity</p>
           </div>
 
           <div>
-            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Captain Net Payout</span>
-            <div className="text-xl font-black text-emerald-400 mt-0.5">₹{calculatedFare.captainNet}</div>
-            <p className="text-[10px] text-slate-500">{homePayslab.captainPayoutPercent}% share of ride</p>
-          </div>
-
-          <div>
-            <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Corridor Toll / Surcharge</span>
-            <div className="text-xl font-black text-purple-300 mt-0.5">
-              {calculatedFare.surcharge > 0 ? `+₹${calculatedFare.surcharge}` : 'None (Local)'}
+            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Corridor Boundary Status</span>
+            <div className="text-xs font-bold text-emerald-300 mt-1">
+              {isSameCluster ? 'Contiguous Conurbation' : isInterCluster ? 'Inter-Cluster Cross Border' : 'Single Zone Local'}
             </div>
-            <p className="text-[10px] text-slate-500">Inter-district bridge/toll credit</p>
+            <p className="text-[10px] text-slate-500">
+              {isSameCluster ? 'Free transit handshake' : isInterCluster ? 'Permit / Highway link' : 'Intra-city transit'}
+            </p>
+          </div>
+
+          <div>
+            <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Dispatch Handshake</span>
+            <div className="text-xs font-bold text-purple-300 mt-1">
+              {eligibleDispatchZones.some(z => z.id === dropoffCity.id) ? 'Permitted In Shift Policy' : 'Outside Selected Shift Range'}
+            </div>
+            <p className="text-[10px] text-slate-500">Shift policy coverage validation</p>
           </div>
 
           <div>

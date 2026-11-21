@@ -761,11 +761,6 @@ export function App() {
                               <span className="text-[9px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-mono font-medium">
                                 🌐 {city.clusterName}
                               </span>
-                              {city.payslabSummary && (
-                                <span className="text-[9px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono">
-                                  Base ₹{city.payslabSummary.baseFare} • ₹{city.payslabSummary.perKmRate}/km ({city.payslabSummary.captainPayoutPercent}% Payout)
-                                </span>
-                              )}
                               {city.isSubDistrict && (
                                 <span className="text-[9px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono">
                                   Sub-District Corridor

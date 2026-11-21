@@ -350,18 +350,13 @@ export const MapView: React.FC<MapProps> = ({
                         </div>
                       )}
 
-                      {/* Regional Cluster & Payslab Badge */}
+                      {/* Regional Cluster Badge */}
                       {city.clusterName && (
                         <div className="my-1.5 p-2 bg-purple-50 rounded-lg border border-purple-200 text-[11px] leading-tight select-text cursor-text">
                           <div className="font-bold text-[10px] text-purple-900 flex items-center space-x-1 mb-0.5">
                             <span>🌐</span>
                             <span>{city.clusterName}</span>
                           </div>
-                          {city.payslabSummary && (
-                            <div className="text-[10px] text-slate-700 font-mono">
-                              Tariff Slab: Base ₹{city.payslabSummary.baseFare} • ₹{city.payslabSummary.perKmRate}/km ({city.payslabSummary.captainPayoutPercent}% Payout)
-                            </div>
-                          )}
                           {city.isSubDistrict && (
                             <div className="text-[9px] text-purple-700 font-medium mt-0.5">
                               ⚡ Sub-district municipality with cross-dispatch to parent hub
