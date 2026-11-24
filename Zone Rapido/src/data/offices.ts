@@ -377,5 +377,53 @@ export const ROPPEN_STATUTORY_OFFICES: CityOffice[] = [
     timing: '10:00 AM - 6:30 PM (Mon-Sat)',
     type: 'regional_support_hub',
     statutorySource: 'Community Ground Verified Branch Office'
+  },
+  {
+    id: 'roppen-nellore',
+    name: 'Roppen Transportation Services - Nellore Support Center',
+    legalEntity: 'Roppen Transportation Services Private Limited',
+    cin: 'U52210TG2015PTC097115',
+    city: 'Nellore',
+    state: 'Andhra Pradesh',
+    address: '27-1-422, Balaji Nagar, Beside Swami Doss School, Nellore, Andhra Pradesh',
+    landmarkNote: 'Beside Swami Doss School, Balaji Nagar',
+    pincode: '524002',
+    lat: 14.4490,
+    lng: 79.9810,
+    timing: '10:00 AM - 6:30 PM (Mon-Sat)',
+    type: 'regional_support_hub',
+    statutorySource: 'Community Ground Verified Branch Office'
+  },
+  {
+    id: 'roppen-rajahmundry',
+    name: 'Roppen Transportation Services - Rajahmundry Regional Hub',
+    legalEntity: 'Roppen Transportation Services Private Limited',
+    cin: 'U52210TG2015PTC097115',
+    city: 'Rajahmundry',
+    state: 'Andhra Pradesh',
+    address: 'Flat No: 39, 1st Floor, Opp Yamaha Service Center, Satyanarayanapuram, near VL Puram, Rajahmundry, Andhra Pradesh',
+    landmarkNote: 'Opp Yamaha Service Center, Satyanarayanapuram, near VL Puram',
+    pincode: '533106',
+    lat: 17.0120,
+    lng: 81.7950,
+    timing: '10:00 AM - 6:30 PM (Mon-Sat)',
+    type: 'regional_support_hub',
+    statutorySource: 'Community Ground Verified Regional Hub (Servicing Rajahmundry & Kakinada)'
+  },
+  {
+    id: 'roppen-tirupati',
+    name: 'Roppen Transportation Services - Tirupati Support Center',
+    legalEntity: 'Roppen Transportation Services Private Limited',
+    cin: 'U52210TG2015PTC097115',
+    city: 'Tirupati',
+    state: 'Andhra Pradesh',
+    address: '18-1-25/2, Shanthi Nagar, NGO Colony, Opp SBI Bank, KT Road, Tirupati, Andhra Pradesh',
+    landmarkNote: 'Opp SBI Bank, KT Road, NGO Colony',
+    pincode: '517501',
+    lat: 13.6360,
+    lng: 79.4210,
+    timing: '10:00 AM - 6:30 PM (Mon-Sat)',
+    type: 'regional_support_hub',
+    statutorySource: 'Community Ground Verified Branch Office'
   }
 ];
