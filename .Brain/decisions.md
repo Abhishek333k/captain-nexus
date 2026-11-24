@@ -69,6 +69,15 @@
    - Injected in-memory `Map` caching (`sessionBoundaryCache`, `roadDistanceCache`) and 5-6 second `AbortController` timeouts on all external Nominatim and OSRM API calls to prevent UI thread lockups and duplicate requests (Rules 3 & 13).
    - Created Web App Manifests (`manifest.json`) in `Zone Rapido` and `Zone Taxi Home` configured for `standalone` display mode, meeting Capacitor and Google Play standards.
    - Sanitized admin header user display (`Authenticated Session`) to prevent personal email leaks in screenshots or production recordings.
+16. **ZERO PAYMENT, MONEY, TARIFF, OR PRICING POLICY (STRICT & PERMANENT - UNIVERSAL ACROSS ALL FLEET PLATFORMS)**:
+   - **Absolute Prohibition**: Under NO circumstances should any part of this project list, calculate, estimate, display, or inform users about any payment, money, prices, fares, or financial compensation.
+   - **Forbidden Data Points**: Strictly prohibits base fares, per-km rates, min fares, toll surcharges, payment slabs / payslab tiers, driver earnings, payout percentages, commissions, tariffs, or ride pricing.
+   - **Universal Applicability**: Enforced across **ALL** current and future fleet platforms (Rapido, Uber India, Ola Cabs, and any upcoming mobility partners).
+   - **Exclusive Project Scope**: This project is dedicated strictly and exclusively to:
+     1. Geographic locations and municipal serviceable boundary polygons.
+     2. Verified physical statutory offices and support centers (street address, landmarks, pin codes).
+     3. Road driving distance (km) and estimated transit drive times (minutes/hours).
+     4. Regional transit clusters, highway corridor linkages, and reverse return dispatch pairing (deadhead miles reduction).
 
 ---
 

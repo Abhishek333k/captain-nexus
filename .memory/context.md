@@ -21,6 +21,10 @@ Captains and commuters applying or searching from rural, peripheral, or unmapped
 ---
 
 ## 3. UI/UX & Compliance Standards
+- **ZERO PAYMENT & PRICING POLICY (STRICT RULE ACROSS ALL FLEETS)**:
+  - Absolutely NO listing, calculating, estimating, or informing about any form of payment, money, prices, fares, payslabs, base fares, km rates, or commissions.
+  - Applies universally to Rapido, Uber, Ola, and all future taxi/mobility platforms.
+  - The project scope is strictly: geographic locations, municipal boundaries, physical office addresses, driving distances (km), and transit drive times.
 - **Google Play & Capacitor Compliance**:
   - `select-none` on interactive elements to prevent browser-like text selection.
   - Safe-area insets (`pt-[env(safe-area-inset-top)]`, `pb-[env(safe-area-inset-bottom)]`).
