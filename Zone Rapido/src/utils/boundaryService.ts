@@ -23,9 +23,9 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
     return sessionBoundaryCache.get(normalizedId);
   }
 
-  // 2. Check precomputed boundaries first for instant zero-latency accuracy
-  if (PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId]) {
-    const precomputed = PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId];
+  // 2. Check verified precomputed municipal boundaries first (e.g. Tadepalli, Vijayawada)
+  const precomputed = PRECOMPUTED_CITY_BOUNDARIES[cityId] || PRECOMPUTED_CITY_BOUNDARIES[normalizedId];
+  if (precomputed && precomputed.isVerified) {
     sessionBoundaryCache.set(normalizedId, precomputed);
     return precomputed;
   }
@@ -44,12 +44,13 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
     // Local storage unavailable
   }
 
-  // 4. Query OpenStreetMap Nominatim for official boundary polygon with 5s timeout
+  // 4. Query OpenStreetMap Nominatim for official city/municipal boundary polygon with 5s timeout
+  // CRITICAL: Strictly avoid query terms like "District" which lump neighboring cities together!
   const cleanName = cityName.split('(')[0].trim();
   const searchQueries = [
+    `${cleanName} City, ${stateName}, India`,
+    `${cleanName} Municipality, ${stateName}, India`,
     `${cleanName} Municipal Corporation, ${stateName}, India`,
-    `${cleanName} District, ${stateName}, India`,
-    `Greater ${cleanName}, ${stateName}, India`,
     `${cleanName}, ${stateName}, India`
   ];
 
@@ -62,7 +63,7 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
       )}`;
       const res = await fetch(url, {
         signal: controller.signal,
-        headers: { 'User-Agent': 'CaptainNexus/1.0' }
+        headers: { 'Accept-Language': 'en' }
       });
       clearTimeout(timeoutId);
       const data = await res.json();
@@ -71,7 +72,14 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
         data[0]?.geojson &&
         (data[0].geojson.type === 'Polygon' || data[0].geojson.type === 'MultiPolygon')
       ) {
-        const geojson = data[0].geojson;
+        const item = data[0];
+        const displayName = (item.display_name || '').toLowerCase();
+        // Guard against district-level polygons that lump multiple cities
+        if (displayName.includes(' district') && !cleanName.toLowerCase().includes('district')) {
+          continue;
+        }
+
+        const geojson = item.geojson;
         sessionBoundaryCache.set(normalizedId, geojson);
         try {
           localStorage.setItem(
@@ -93,12 +101,12 @@ export async function fetchCityBoundary(cityId: string, cityName: string, stateN
     }
   }
 
-  // 5. Fallback: Always return instant precomputed boundary for the city if exists
-  const fallback = PRECOMPUTED_CITY_BOUNDARIES[cityId] || null;
-  if (fallback) {
-    sessionBoundaryCache.set(normalizedId, fallback);
+  // 5. Fallback: Return precomputed boundary for the city if exists
+  if (precomputed) {
+    sessionBoundaryCache.set(normalizedId, precomputed);
+    return precomputed;
   }
-  return fallback;
+  return null;
 }
 
 /**

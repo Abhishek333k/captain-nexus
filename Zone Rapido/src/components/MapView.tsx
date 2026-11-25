@@ -88,15 +88,31 @@ const searchLocationIcon = createCustomIcon('#EF4444', '📍');
 function MapViewController({
   searchCenter,
   selectedCityCenter,
-  radiusKm
+  radiusKm,
+  activeCityBoundary
 }: {
   searchCenter: [number, number] | null;
   selectedCityCenter: [number, number] | null;
   radiusKm: number;
+  activeCityBoundary?: any | null;
 }) {
   const map = useMap();
 
   useEffect(() => {
+    // If an official city boundary polygon is active, smoothly fit view to its bounds (Google Maps style)
+    if (activeCityBoundary) {
+      try {
+        const geoLayer = L.geoJSON(activeCityBoundary);
+        const bounds = geoLayer.getBounds();
+        if (bounds.isValid()) {
+          map.flyToBounds(bounds, { padding: [45, 45], maxZoom: 14, duration: 1.2 });
+          return;
+        }
+      } catch (err) {
+        console.warn('Could not fit bounds to city boundary:', err);
+      }
+    }
+
     // If the user selected an explicit city, prioritize that.
     // Otherwise focus on the searched location center!
     const center = selectedCityCenter || searchCenter;
@@ -114,7 +130,7 @@ function MapViewController({
     } catch {
       map.flyTo(center, 11, { duration: 1.2 });
     }
-  }, [selectedCityCenter, searchCenter, radiusKm, map]);
+  }, [selectedCityCenter, searchCenter, radiusKm, activeCityBoundary, map]);
 
   return null;
 }
@@ -177,24 +193,23 @@ export const MapView: React.FC<MapProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Dynamic Municipal City Boundary (GeoJSON Polygon) */}
+        {/* Dynamic Municipal City Boundary (GeoJSON Polygon - Google Maps style) */}
         {activeCityBoundary && (
           <GeoJSON
             key={selectedCityName ?? 'active-boundary'}
             data={activeCityBoundary}
             style={() => ({
-              color: isCaptainInsideBoundary ? '#10B981' : '#F59E0B',
-              weight: 4,
-              opacity: 1,
-              fillColor: isCaptainInsideBoundary ? '#10B981' : '#FBBF24',
-              fillOpacity: 0.28,
-              dashArray: '6, 6'
+              color: isCaptainInsideBoundary ? '#10B981' : '#DC2626',
+              weight: 2.5,
+              opacity: 0.95,
+              fillColor: isCaptainInsideBoundary ? '#10B981' : '#EF4444',
+              fillOpacity: 0.08
             })}
           />
         )}
 
-        {/* Searched / Reference Location */}
-        {searchCenter && (
+        {/* Custom Point / Address Reference Location (Only shown when an official city is NOT selected) */}
+        {searchCenter && !selectedCity && (
           <>
             <Marker position={searchCenter} icon={searchLocationIcon}>
               <Popup>
@@ -503,6 +518,7 @@ export const MapView: React.FC<MapProps> = ({
           searchCenter={searchCenter}
           selectedCityCenter={selectedCityCenter}
           radiusKm={radiusKm}
+          activeCityBoundary={activeCityBoundary}
         />
       </MapContainer>
     </div>
