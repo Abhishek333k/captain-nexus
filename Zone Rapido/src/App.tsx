@@ -31,6 +31,7 @@ export function App() {
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const cityListRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'cities' | 'offices'>('cities');
   const [cities, setCities] = useState<City[]>(() => {
     try {
@@ -289,6 +290,13 @@ export function App() {
       isMounted = false;
     };
   }, [searchedLocation, cities, offices]);
+
+  // Scroll directory list to top whenever a new city, map point, or location is selected
+  useEffect(() => {
+    if (searchedLocation && cityListRef.current) {
+      cityListRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [searchedLocation]);
 
   return (
     <div
@@ -598,7 +606,7 @@ export function App() {
 
           {/* Tab 1: Active Cities List */}
           {activeTab === 'cities' && (
-            <div id="tour-city-list" className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
+            <div ref={cityListRef} id="tour-city-list" className="flex-1 overflow-y-auto p-4 space-y-2.5 pb-24 md:pb-4">
               <div className="flex justify-between items-center text-xs text-slate-400 px-1 mb-1">
                 <span>Rapido Operating Directory</span>
                 <span>Road Transportation Distance</span>
@@ -616,6 +624,8 @@ export function App() {
                       key={city.id}
                       onClick={() => {
                         setSelectedCity(city);
+                        setRoadDistances({});
+                        setSearchedLocation({ name: city.name, lat: city.lat, lng: city.lng });
                         if (typeof window !== 'undefined' && window.innerWidth < 768) {
                           setMobileView('map');
                         }
@@ -842,6 +852,9 @@ export function App() {
                   <div
                     key={office.id}
                     onClick={() => {
+                      setSelectedCity(null);
+                      setRoadDistances({});
+                      setSearchedLocation({ name: office.name, lat: office.lat, lng: office.lng });
                       if (typeof window !== 'undefined' && window.innerWidth < 768) {
                         setShowOfficePins(true);
                         setMobileView('map');
@@ -960,7 +973,25 @@ export function App() {
             activeCityBoundary={activeBoundary?.geojson ?? null}
             selectedCityName={activeBoundary?.cityName ?? null}
             isCaptainInsideBoundary={isInsideBoundary}
-            onSelectCity={(city) => setSelectedCity(city)}
+            onSelectCity={(city) => {
+              setSelectedCity(city);
+              setRoadDistances({});
+              setSearchedLocation({ name: city.name, lat: city.lat, lng: city.lng });
+            }}
+            onSelectOffice={(office) => {
+              setSelectedCity(null);
+              setRoadDistances({});
+              setSearchedLocation({ name: office.name, lat: office.lat, lng: office.lng });
+            }}
+            onMapClick={(lat, lng) => {
+              setSelectedCity(null);
+              setRoadDistances({});
+              setSearchedLocation({
+                name: `Map Point (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+                lat,
+                lng
+              });
+            }}
           />
         </div>
 

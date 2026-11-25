@@ -8,7 +8,8 @@ import {
   Popup,
   Tooltip,
   GeoJSON,
-  useMap
+  useMap,
+  useMapEvents
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -23,6 +24,7 @@ interface MapProps {
   radiusKm: number;
   onSelectCity?: (city: City) => void;
   onSelectOffice?: (office: CityOffice) => void;
+  onMapClick?: (lat: number, lng: number) => void;
   showSurgeHexagons?: boolean;
   showCityPins?: boolean;
   showOfficePins?: boolean;
@@ -117,6 +119,15 @@ function MapViewController({
   return null;
 }
 
+function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onMapClick?.(e.latlng.lat, e.latlng.lng);
+    }
+  });
+  return null;
+}
+
 export const MapView: React.FC<MapProps> = ({
   cities,
   offices = [],
@@ -125,6 +136,7 @@ export const MapView: React.FC<MapProps> = ({
   radiusKm,
   onSelectCity,
   onSelectOffice,
+  onMapClick,
   showSurgeHexagons = false,
   showCityPins = true,
   showOfficePins = true,
@@ -486,6 +498,7 @@ export const MapView: React.FC<MapProps> = ({
             );
           })}
 
+        <MapClickHandler onMapClick={onMapClick} />
         <MapViewController
           searchCenter={searchCenter}
           selectedCityCenter={selectedCityCenter}

@@ -22,6 +22,7 @@ export interface City {
   notes?: string; // Operational notes (e.g., service zones, high demand hours)
   distance?: number;
   roadDistanceKm?: number;
+  rapidoCityCode?: string; // Internal Rapido backend ObjectId (e.g., '5a5f6f431635168040c9a162' for Vijayawada)
   additionalOffices?: CityOfficeLocation[]; // Multiple office locations for major metropolitan zones
   clusterId?: string; // Multi-zone transit cluster ID (e.g., 'pan_vijayawada', 'delhi_ncr')
   clusterName?: string; // Human readable cluster label (e.g., 'Pan-Vijayawada (VGTM Transit Corridor)')
@@ -543,6 +544,16 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
   { id: 'salem', name: 'Salem', state: 'Tamil Nadu', lat: 11.6643, lng: 78.1460, services: ['bike', 'auto'], active: true },
   { id: 'sambalpur', name: 'Sambalpur', state: 'Odisha', lat: 21.4669, lng: 83.9812, services: ['bike', 'auto'], active: true },
   { id: 'shillong', name: 'Shillong', state: 'Meghalaya', lat: 25.5788, lng: 91.8933, services: ['bike', 'auto'], active: true },
+  {
+    id: 'siddipet',
+    name: 'Siddipet',
+    state: 'Telangana',
+    lat: 18.1018,
+    lng: 78.8520,
+    services: ['bike', 'auto'],
+    active: true,
+    notes: 'No physical branch office yet • Transit service active'
+  },
   { id: 'siliguri', name: 'Siliguri', state: 'West Bengal', lat: 26.7271, lng: 88.3953, services: ['bike', 'auto', 'tuk_tuk'], active: true },
   {
     id: 'surat',
@@ -556,6 +567,16 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     pincode: '395001',
     landmarkNote: 'Athugar Street, Nanpura Main Road, Plot 828/829',
     notes: 'Active South Gujarat apex hub • Nanpura support center'
+  },
+  {
+    id: 'suryapet',
+    name: 'Suryapet',
+    state: 'Telangana',
+    lat: 17.1439,
+    lng: 79.6239,
+    services: ['bike', 'auto'],
+    active: true,
+    notes: 'No physical branch office yet • Transit service active'
   },
   { id: 'tezpur', name: 'Tezpur', state: 'Assam', lat: 26.6528, lng: 92.7926, services: ['bike', 'auto'], active: true },
   {
@@ -597,6 +618,7 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     lng: 80.6480,
     services: ['bike', 'auto', 'cab'],
     active: true,
+    rapidoCityCode: '5a5f6f431635168040c9a162',
     address: 'D.No: 48-11/2-10A, Shakamuri Shivayya Starlet, 5th Left 2nd Building, Opposite KR Academy, Currency Nagar Main Road, Vijayawada, Andhra Pradesh',
     pincode: '520008',
     landmarkNote: 'Opposite KR Academy, Currency Nagar Main Road',
