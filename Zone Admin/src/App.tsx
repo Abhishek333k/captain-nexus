@@ -6,7 +6,6 @@ import { AdminLogin } from './components/AdminLogin';
 import { CityEditModal } from './components/CityEditModal';
 import { OfficePayloadModal } from './components/OfficePayloadModal';
 import { FeedbackReportsTab } from './components/FeedbackReportsTab';
-import { ShiftSimulatorTab } from './components/ShiftSimulatorTab';
 import { RAPIDO_OFFICIAL_CITIES, City } from '../../Zone Rapido/src/data/cities';
 import { ROPPEN_STATUTORY_OFFICES, CityOffice } from '../../Zone Rapido/src/data/offices';
 
@@ -40,7 +39,7 @@ export default function AdminApp() {
     return null;
   });
 
-  const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries' | 'reports' | 'shifts'>('cities');
+  const [activeTab, setActiveTab] = useState<'cities' | 'offices' | 'boundaries' | 'reports'>('cities');
   const [cities, setCities] = useState<City[]>(RAPIDO_OFFICIAL_CITIES);
   const [offices, setOffices] = useState<CityOffice[]>(ROPPEN_STATUTORY_OFFICES);
   const [citySearchFilter, setCitySearchFilter] = useState('');
@@ -670,14 +669,6 @@ export default function AdminApp() {
                   </span>
                 )}
               </button>
-              <button
-                onClick={() => setActiveTab('shifts')}
-                className={`px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center space-x-1.5 ${
-                  activeTab === 'shifts' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <span>⚡ Shift Dispatch Simulator</span>
-              </button>
             </div>
           </div>
 
@@ -1100,11 +1091,6 @@ export default function AdminApp() {
                 setCities((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
               }}
             />
-          )}
-
-          {/* TAB 5: CAPTAIN SHIFT & REGIONAL DISPATCH SIMULATOR */}
-          {activeTab === 'shifts' && (
-            <ShiftSimulatorTab cities={cities} />
           )}
         </div>
       )}
