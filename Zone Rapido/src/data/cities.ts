@@ -689,5 +689,17 @@ export const RAPIDO_OFFICIAL_CITIES: City[] = [
     connectedZoneIds: ['vishakapatnam'],
     crossDispatchEnabled: true,
     notes: 'Manyam district headquarters connected via Vizianagaram / Visakhapatnam transit spine'
-  }
+  },
+  { id: 'ambala', name: 'Ambala', state: 'Haryana', lat: 30.3782, lng: 76.7767, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'ankleshwar', name: 'Ankleshwar', state: 'Gujarat', lat: 21.6264, lng: 73.0152, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'bharuch', name: 'Bharuch', state: 'Gujarat', lat: 21.7051, lng: 72.9959, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'bhavnagar', name: 'Bhavnagar', state: 'Gujarat', lat: 21.7645, lng: 72.1519, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'bhimavaram', name: 'Bhimavaram', state: 'Andhra Pradesh', lat: 16.5449, lng: 81.5212, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'brahmapur', name: 'Brahmapur', state: 'Odisha', lat: 19.3150, lng: 84.7941, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'gandhidham', name: 'Gandhidham', state: 'Gujarat', lat: 23.0753, lng: 70.1337, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'jamnagar', name: 'Jamnagar', state: 'Gujarat', lat: 22.4707, lng: 70.0577, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'nadiad', name: 'Nadiad', state: 'Gujarat', lat: 22.6916, lng: 72.8634, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'nizamabad', name: 'Nizamabad', state: 'Telangana', lat: 18.6725, lng: 78.0941, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'sangareddy', name: 'Sangareddy', state: 'Telangana', lat: 17.6194, lng: 78.0816, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' },
+  { id: 'vapi', name: 'Vapi', state: 'Gujarat', lat: 20.3893, lng: 72.9106, services: ['bike', 'auto'], active: true, notes: 'No physical branch office yet • Transit service active' }
 ];

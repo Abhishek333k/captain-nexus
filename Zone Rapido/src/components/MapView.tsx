@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -114,8 +114,8 @@ function MapViewController({
     }
 
     // If the user selected an explicit city, prioritize that.
-    // Otherwise focus on the searched location center!
-    const center = selectedCityCenter || searchCenter;
+    // Do NOT jump/zoom on arbitrary map point clicks (only on explicit city selection or search).
+    const center = selectedCityCenter;
     if (!center) return;
 
     // Use a tighter focus for single city click, or radius coverage for search location
@@ -136,8 +136,26 @@ function MapViewController({
 }
 
 function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void }) {
+  const lastGestureRef = useRef<number>(0);
+
   useMapEvents({
+    dragstart() {
+      lastGestureRef.current = Date.now();
+    },
+    dragend() {
+      lastGestureRef.current = Date.now();
+    },
+    zoomstart() {
+      lastGestureRef.current = Date.now();
+    },
+    zoomend() {
+      lastGestureRef.current = Date.now();
+    },
     click(e) {
+      // Guard against accidental clicks firing right after a drag or pinch-zoom gesture
+      if (Date.now() - lastGestureRef.current < 350) {
+        return;
+      }
       onMapClick?.(e.latlng.lat, e.latlng.lng);
     }
   });

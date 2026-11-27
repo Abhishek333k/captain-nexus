@@ -14,6 +14,7 @@ import { MethodologyModal } from './components/MethodologyModal';
 import { WelcomeBetaModal } from './components/WelcomeBetaModal';
 import { CityCardSkeleton } from './components/CityCardSkeleton';
 import { ReportDiscrepancyModal } from './components/ReportDiscrepancyModal';
+import { CityDetailDrawer } from './components/CityDetailDrawer';
 
 const SERVICE_OPTIONS: { id: ServiceType; label: string }[] = [
   { id: 'bike', label: 'Bike Taxi' },
@@ -992,6 +993,14 @@ export function App() {
                 lng
               });
             }}
+          />
+
+          {/* Google Maps-Style Slide-Over City Detail Drawer */}
+          <CityDetailDrawer
+            city={selectedCity}
+            isDarkMode={isDarkMode}
+            onClose={() => setSelectedCity(null)}
+            onReportUpdate={(target) => handleOpenReportModal(target)}
           />
         </div>
 
